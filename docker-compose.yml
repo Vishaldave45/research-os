@@ -3,15 +3,15 @@ services:
     image: postgres:15-alpine
     container_name: researchos-db
     environment:
-      POSTGRES_USER: researchos
-      POSTGRES_PASSWORD: researchos_secret_password
-      POSTGRES_DB: researchos_db
+      POSTGRES_USER: ${POSTGRES_USER:-researchos}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-researchos_secret_password}
+      POSTGRES_DB: ${POSTGRES_DB:-researchos_db}
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U researchos -d researchos_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-researchos} -d ${POSTGRES_DB:-researchos_db}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -22,12 +22,12 @@ services:
       dockerfile: Dockerfile
     container_name: researchos-api
     environment:
-      DATABASE_URL: postgresql+asyncpg://researchos:researchos_secret_password@postgres:5432/researchos_db
-      JWT_SECRET_KEY: dev_jwt_secret_key_change_in_production_32chars
-      JWT_ALGORITHM: HS256
-      ACCESS_TOKEN_EXPIRE_MINUTES: 15
-      REFRESH_TOKEN_EXPIRE_DAYS: 7
-      CORS_ORIGINS: "http://localhost:3000,http://localhost:5173"
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://researchos:researchos_secret_password@postgres:5432/researchos_db}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev_jwt_secret_key_change_in_production_32chars}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
     ports:
       - "8000:8000"
     depends_on:
@@ -40,7 +40,7 @@ services:
       dockerfile: Dockerfile
     container_name: researchos-ui
     environment:
-      VITE_API_BASE_URL: "http://localhost:8000/api/v1"
+      VITE_BACKEND_URL: "http://backend:8000"
     ports:
       - "3000:3000"
     depends_on:

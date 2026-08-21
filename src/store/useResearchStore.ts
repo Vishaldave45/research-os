@@ -154,21 +154,21 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
   };
 
   return {
-    // Initialized from canonical domain dataset
+    // State initialized empty; populated strictly via FastAPI / PostgreSQL
     workspace: CANONICAL_WORKSPACE,
-    questions: INITIAL_QUESTIONS,
-    papers: INITIAL_PAPERS,
-    gaps: INITIAL_GAPS,
-    hypotheses: INITIAL_HYPOTHESES,
-    experiments: INITIAL_EXPERIMENTS,
-    results: INITIAL_RESULTS,
-    decisions: INITIAL_DECISIONS,
-    claims: INITIAL_CLAIMS,
-    relationships: INITIAL_RELATIONSHIPS,
+    questions: [],
+    papers: [],
+    gaps: [],
+    hypotheses: [],
+    experiments: [],
+    results: [],
+    decisions: [],
+    claims: [],
+    relationships: [],
 
-    selectedEntityId: 'h-001',
-    selectedEntityType: 'hypothesis',
-    isInspectorOpen: true,
+    selectedEntityId: null,
+    selectedEntityType: null,
+    isInspectorOpen: false,
 
     viewMode: initialUIPrefs.viewMode || 'canvas',
     layoutMode: initialUIPrefs.layoutMode || 'pipeline',

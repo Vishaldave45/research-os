@@ -126,6 +126,7 @@ researchos/
 │   ├── store/                     # Zustand store with authoritative API synchronization
 │   ├── utils/                     # Semantic ontology rules & DAG cycle detection
 │   ├── services/api/              # Typed REST API client bindings
+│   ├── features/auth/             # Authentication UI, forms, and token store
 │   ├── components/
 │   │   ├── canvas/                # @xyflow/react canvas, custom nodes, edges, pipeline layout
 │   │   ├── inspector/             # Precision node inspector drawer
@@ -135,11 +136,6 @@ researchos/
 │   │   └── modals/                # Create entity, link modal, command palette, trace modal
 │   ├── App.tsx                    # Root application component
 │   └── main.tsx                   # React DOM bootstrap
-│
-├── server/                        # Node preview runtime & API proxy gateway
-│   ├── routes/                    # API routes proxying requests and serving preview state
-│   ├── services/                  # TraceService & provenance algorithms
-│   └── db/                        # Persistent JSON database engine for preview sandbox
 │
 ├── docker-compose.yml             # Full-stack composition (FastAPI + PostgreSQL + Vite)
 ├── Dockerfile                     # Multi-stage production container build
@@ -151,13 +147,16 @@ researchos/
 
 ## 🚀 Getting Started
 
-### Option A: Local Development Server (Instant Preview)
+### Option A: Local Development
 
 ```bash
-# 1. Install dependencies
-npm install
+# 1. Backend (FastAPI + PostgreSQL)
+cd backend
+source .venv/bin/activate
+uvicorn app.main:app --reload --port 8000
 
-# 2. Start the development server
+# 2. Frontend (React + Vite)
+npm install
 npm run dev
 
 # 3. Open http://localhost:3000 in your browser
@@ -166,8 +165,8 @@ npm run dev
 ### Option B: Full-Stack Docker Compose (FastAPI + PostgreSQL)
 
 ```bash
-# 1. Start all services (PostgreSQL 16, FastAPI backend, React frontend)
-docker-compose up --build
+# 1. Start all services (PostgreSQL 15, FastAPI backend, React frontend)
+docker compose up --build
 
 # 2. Access the services:
 #    - Frontend UI: http://localhost:3000
@@ -180,14 +179,14 @@ docker-compose up --build
 ## 🧪 Verification & Testing
 
 ```bash
-# Run frontend TypeScript type checking and linter
+# Run frontend TypeScript type checking
 npm run lint
 
 # Build production bundle
 npm run build
 
-# Run backend Python tests (inside backend environment)
-pytest backend/tests/
+# Run backend Python tests
+cd backend && pytest -v
 ```
 
 ---

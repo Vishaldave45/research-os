@@ -74,6 +74,7 @@ export const ResearchCanvas: React.FC = () => {
     setSearchQuery,
     openCreateModal,
     openLinkModal,
+    resetToCanonicalDataset,
   } = useResearchStore();
 
   // Compute graph nodes with coordinates based on layout mode
@@ -443,6 +444,37 @@ export const ResearchCanvas: React.FC = () => {
                 <span className="h-2 w-2 rounded-full bg-purple-500" />
                 6. Decisions & Claims
               </span>
+            </div>
+          </Panel>
+        )}
+
+        {/* Empty Workspace State */}
+        {nodes.length === 0 && (
+          <Panel position="top-center" className="mt-32">
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white/95 p-8 shadow-xl backdrop-blur max-w-md text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 mb-4">
+                <Layers className="h-6 w-6" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900">Research Graph is Empty</h3>
+              <p className="mt-1 text-xs text-slate-500 max-w-sm">
+                No research entities found in this workspace. Start by adding a research question or seed the canonical WCE depth-reduction dataset.
+              </p>
+              <div className="mt-6 flex items-center gap-3">
+                <button
+                  onClick={() => openCreateModal()}
+                  className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 transition cursor-pointer"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Create First Node</span>
+                </button>
+                <button
+                  onClick={() => resetToCanonicalDataset()}
+                  className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                >
+                  <Sparkles className="h-4 w-4 text-indigo-500" />
+                  <span>Seed Canonical Dataset</span>
+                </button>
+              </div>
             </div>
           </Panel>
         )}
