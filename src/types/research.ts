@@ -130,6 +130,8 @@ export interface Workspace {
   name: string;
   description: string;
   createdAt: string;
+  slug?: string;
+  updatedAt?: string;
 }
 
 export interface LiteratureMatrixRow {

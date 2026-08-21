@@ -43,6 +43,32 @@ class AuthService:
             is_active=True,
         )
         created_user = await self.user_repo.create(user)
+
+        # Auto-provision initial workspace
+        if self.db is not None:
+            import re
+            from app.models.workspace import Workspace, WorkspaceMembership
+            from app.repositories.workspace_repository import WorkspaceRepository
+            
+            ws_repo = WorkspaceRepository(self.db)
+            user_prefix = created_user.full_name or "Personal"
+            clean_slug = re.sub(r"[^a-z0-9]+", "-", f"{user_prefix}-lab".lower()).strip("-")
+            slug = f"{clean_slug}-{created_user.id.hex[:6]}"
+
+            default_ws = Workspace(
+                name=f"{user_prefix}'s Research Lab",
+                slug=slug,
+                description="Default research workspace",
+                owner_id=created_user.id,
+            )
+            created_ws = await ws_repo.create(default_ws)
+            await ws_repo.add_member(
+                WorkspaceMembership(
+                    workspace_id=created_ws.id,
+                    user_id=created_user.id,
+                    role="owner",
+                )
+            )
         
         # Issue initial token pair
         tokens = await self._issue_token_pair(created_user.id)

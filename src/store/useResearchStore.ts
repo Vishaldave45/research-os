@@ -208,6 +208,27 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
       }
       set({ isSyncing: true, error: null });
       try {
+        // Fetch user workspaces and activate primary workspace
+        try {
+          const workspaces = await apiClient.get<any[]>('/workspaces');
+          if (Array.isArray(workspaces) && workspaces.length > 0) {
+            const currentWsId = apiClient.getActiveWorkspaceId();
+            const matchedWs = workspaces.find((w) => w.id === currentWsId) || workspaces[0];
+            apiClient.setActiveWorkspace(matchedWs.id);
+            set({
+              workspace: {
+                id: matchedWs.id,
+                name: matchedWs.name,
+                description: matchedWs.description || '',
+                slug: matchedWs.slug,
+                createdAt: matchedWs.created_at || new Date().toISOString(),
+              },
+            });
+          }
+        } catch {
+          // Backend will auto-resolve workspace context
+        }
+
         const [
           questions,
           papers,
@@ -231,15 +252,15 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
         ]);
 
         set({
-          questions,
-          papers,
-          gaps,
-          hypotheses,
-          experiments,
-          results,
-          decisions,
-          claims,
-          relationships,
+          questions: questions || [],
+          papers: papers || [],
+          gaps: gaps || [],
+          hypotheses: hypotheses || [],
+          experiments: experiments || [],
+          results: results || [],
+          decisions: decisions || [],
+          claims: claims || [],
+          relationships: relationships || [],
           error: null,
         });
       } catch (err: any) {
