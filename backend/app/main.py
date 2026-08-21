@@ -16,6 +16,9 @@ from app.api.v1.experiments_and_claims import (
     results_router,
     claims_router,
 )
+from app.api.v1.decisions import router as decisions_router
+from app.api.v1.graph import router as graph_router
+from app.api.v1.relationships import router as relationships_router
 
 
 def create_application() -> FastAPI:
@@ -45,6 +48,9 @@ def create_application() -> FastAPI:
     application.include_router(experiments_router, prefix=settings.API_V1_STR)
     application.include_router(results_router, prefix=settings.API_V1_STR)
     application.include_router(claims_router, prefix=settings.API_V1_STR)
+    application.include_router(decisions_router, prefix=settings.API_V1_STR)
+    application.include_router(graph_router, prefix=settings.API_V1_STR)
+    application.include_router(relationships_router, prefix=settings.API_V1_STR)
 
     @application.get("/health", tags=["Health"])
     async def health_check():
