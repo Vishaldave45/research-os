@@ -1,0 +1,6 @@
+{
+  "name": "ResearchOS",
+  "description": "Research Operating System for connecting and preserving the research reasoning chain from evidence to hypothesis, experiment, result, and decision.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
