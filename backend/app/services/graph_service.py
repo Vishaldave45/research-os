@@ -511,7 +511,52 @@ class GraphService:
                 detail=f"Target entity ({rel_in.target_type} {rel_in.target_id}) not found in workspace.",
             )
 
-        # Check for existing duplicate edge
+        # 1. Semantic ontology validation
+        allowed_pairs = {
+            ("paper", "informs", "question"),
+            ("paper", "motivates", "question"),
+            ("paper", "informs", "gap"),
+            ("paper", "motivates", "gap"),
+            ("paper", "informs", "hypothesis"),
+            ("paper", "cites", "paper"),
+            ("paper", "cites", "claim"),
+            ("paper", "supports", "claim"),
+            ("paper", "refutes", "claim"),
+            ("question", "motivates", "gap"),
+            ("question", "motivates", "hypothesis"),
+            ("gap", "motivates", "hypothesis"),
+            ("gap", "addresses", "hypothesis"),
+            ("hypothesis", "tests", "experiment"),
+            ("hypothesis", "addresses", "gap"),
+            ("hypothesis", "motivates", "experiment"),
+            ("experiment", "produces", "result"),
+            ("experiment", "supports", "result"),
+            ("result", "supports", "hypothesis"),
+            ("result", "refutes", "hypothesis"),
+            ("result", "validates", "hypothesis"),
+            ("result", "supports", "decision"),
+            ("result", "informs", "decision"),
+            ("result", "refutes", "decision"),
+            ("result", "supports", "claim"),
+            ("result", "refutes", "claim"),
+            ("result", "validates", "claim"),
+            ("decision", "supports", "claim"),
+            ("decision", "derived_from", "claim"),
+            ("decision", "addresses", "hypothesis"),
+            ("decision", "validates", "hypothesis"),
+            ("decision", "supersedes", "decision"),
+            ("claim", "derived_from", "decision"),
+            ("claim", "supports", "claim"),
+        }
+
+        pair = (rel_in.source_type, rel_in.relation_type, rel_in.target_type)
+        if pair not in allowed_pairs:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Semantic relation '{rel_in.relation_type}' is not allowed from '{rel_in.source_type}' to '{rel_in.target_type}'.",
+            )
+
+        # 2. Check for existing duplicate edge
         exists = await self.rel_repo.exists(
             workspace_id=workspace_id,
             source_type=rel_in.source_type,
@@ -525,6 +570,23 @@ class GraphService:
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Relationship already exists between these entities.",
             )
+
+        # 3. DAG cycle prevention (traverse downstream from target to ensure source is unreachable)
+        existing_rels = await self.rel_repo.list_for_workspace(workspace_id)
+        visited = set()
+        queue = [t_id]
+        while queue:
+            curr = queue.pop(0)
+            if curr == s_id:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="Adding this relationship would create a directed cycle in the reasoning graph.",
+                )
+            if curr not in visited:
+                visited.add(curr)
+                for r in existing_rels:
+                    if str(r.source_id) == curr and str(r.target_id) not in visited:
+                        queue.append(str(r.target_id))
 
         rel = Relationship(
             workspace_id=workspace_id,

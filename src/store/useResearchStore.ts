@@ -215,30 +215,33 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
           claims,
           relationships,
         ] = await Promise.all([
-          entitiesApi.listQuestions().catch(() => get().questions),
-          entitiesApi.listPapers().catch(() => get().papers),
-          entitiesApi.listGaps().catch(() => get().gaps),
-          entitiesApi.listHypotheses().catch(() => get().hypotheses),
-          entitiesApi.listExperiments().catch(() => get().experiments),
-          entitiesApi.listResults().catch(() => get().results),
-          entitiesApi.listDecisions().catch(() => get().decisions),
-          entitiesApi.listClaims().catch(() => get().claims),
-          entitiesApi.listRelationships().catch(() => get().relationships),
+          entitiesApi.listQuestions(),
+          entitiesApi.listPapers(),
+          entitiesApi.listGaps(),
+          entitiesApi.listHypotheses(),
+          entitiesApi.listExperiments(),
+          entitiesApi.listResults(),
+          entitiesApi.listDecisions(),
+          entitiesApi.listClaims(),
+          entitiesApi.listRelationships(),
         ]);
 
         set({
-          questions: questions.length ? questions : get().questions,
-          papers: papers.length ? papers : get().papers,
-          gaps: gaps.length ? gaps : get().gaps,
-          hypotheses: hypotheses.length ? hypotheses : get().hypotheses,
-          experiments: experiments.length ? experiments : get().experiments,
-          results: results.length ? results : get().results,
-          decisions: decisions.length ? decisions : get().decisions,
-          claims: claims.length ? claims : get().claims,
-          relationships: relationships.length ? relationships : get().relationships,
+          questions,
+          papers,
+          gaps,
+          hypotheses,
+          experiments,
+          results,
+          decisions,
+          claims,
+          relationships,
+          error: null,
         });
       } catch (err: any) {
-        console.warn('Backend sync warning:', err);
+        const msg = err.message || 'Unable to sync research entities from backend. Please verify your connection or retry.';
+        console.warn('Backend sync error:', err);
+        set({ error: msg });
       } finally {
         set({ isSyncing: false });
       }

@@ -29,6 +29,9 @@ export default function App() {
     isAuthModalOpen,
     setAuthModalOpen,
     syncFromBackend,
+    error,
+    setError,
+    isSyncing,
   } = useResearchStore();
 
   useEffect(() => {
@@ -40,6 +43,31 @@ export default function App() {
     <div id="researchos-root" className="flex h-screen w-screen flex-col bg-slate-900 font-sans text-slate-900 antialiased overflow-hidden">
       {/* Top Application Header */}
       <Header />
+
+      {/* Global Sync Warning / Error Banner */}
+      {error && (
+        <div className="bg-amber-500/90 backdrop-blur text-slate-950 px-4 py-2 text-xs font-semibold flex items-center justify-between shadow-sm z-50">
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-2 h-2 rounded-full bg-rose-600 animate-pulse"></span>
+            <span>{error}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => syncFromBackend()}
+              disabled={isSyncing}
+              className="bg-slate-900 text-white px-2.5 py-1 rounded text-xs hover:bg-slate-800 transition disabled:opacity-50"
+            >
+              {isSyncing ? 'Syncing...' : 'Retry Sync'}
+            </button>
+            <button
+              onClick={() => setError(null)}
+              className="text-slate-900 hover:text-slate-700 font-bold"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main View Area */}
       <main className="relative flex-1 overflow-hidden bg-slate-50">

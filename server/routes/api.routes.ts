@@ -355,6 +355,59 @@ router.post('/relationships', requireAuth, requireWorkspaceContext, (req: Authen
 
   const db = dbEngine.getDb();
   const wsId = req.workspaceId!;
+
+  // 1. Cross-workspace check: verify source and target exist within this active workspace
+  const allEntities = [
+    ...db.questions,
+    ...db.papers,
+    ...db.gaps,
+    ...db.hypotheses,
+    ...db.experiments,
+    ...db.results,
+    ...db.decisions,
+    ...db.claims,
+  ];
+
+  const sourceEntity = allEntities.find((e) => e.id === source_id && e.workspace_id === wsId);
+  const targetEntity = allEntities.find((e) => e.id === target_id && e.workspace_id === wsId);
+
+  if (!sourceEntity) {
+    return res.status(404).json({ error: `Source entity (${source_id}) not found in workspace.` });
+  }
+  if (!targetEntity) {
+    return res.status(404).json({ error: `Target entity (${target_id}) not found in workspace.` });
+  }
+
+  // 2. Duplicate check
+  const duplicate = db.relationships.some(
+    (r) =>
+      r.workspace_id === wsId &&
+      r.source_id === source_id &&
+      r.target_id === target_id &&
+      r.relation_type === relation_type
+  );
+  if (duplicate) {
+    return res.status(409).json({ error: 'Relationship already exists between these entities.' });
+  }
+
+  // 3. Cycle prevention
+  const visited = new Set<string>();
+  const queue = [target_id];
+  while (queue.length > 0) {
+    const curr = queue.shift()!;
+    if (curr === source_id) {
+      return res.status(422).json({ error: 'Adding this relationship creates a directed cycle in the reasoning graph.' });
+    }
+    if (!visited.has(curr)) {
+      visited.add(curr);
+      for (const r of db.relationships) {
+        if (r.workspace_id === wsId && r.source_id === curr && !visited.has(r.target_id)) {
+          queue.push(r.target_id);
+        }
+      }
+    }
+  }
+
   const now = new Date().toISOString();
   const id = `rel-${Date.now()}`;
 
@@ -362,9 +415,9 @@ router.post('/relationships', requireAuth, requireWorkspaceContext, (req: Authen
     id,
     workspace_id: wsId,
     source_id,
-    source_type: source_type || 'entity',
+    source_type: source_type || sourceEntity.type || 'entity',
     target_id,
-    target_type: target_type || 'entity',
+    target_type: target_type || targetEntity.type || 'entity',
     relation_type,
     confidence: confidence || 1.0,
     notes,

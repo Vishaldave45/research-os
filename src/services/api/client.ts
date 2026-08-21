@@ -65,7 +65,10 @@ class ApiClient {
       const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: this.refreshToken }),
+        body: JSON.stringify({
+          refreshToken: this.refreshToken,
+          refresh_token: this.refreshToken,
+        }),
       });
 
       if (!res.ok) {
@@ -76,6 +79,9 @@ class ApiClient {
       const data = await res.json();
       if (data.tokens?.accessToken) {
         this.setTokens(data.tokens.accessToken, data.tokens.refreshToken || this.refreshToken);
+        return true;
+      } else if (data.access_token) {
+        this.setTokens(data.access_token, data.refresh_token || this.refreshToken);
         return true;
       }
     } catch {
