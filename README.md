@@ -31,15 +31,13 @@ Scientific and deep-tech engineering workflows frequently suffer from **provenan
 
 ### Key Guarantees:
 1. **Single Source of Truth**: All data persists in PostgreSQL via FastAPI REST endpoints and synchronizes to the frontend Zustand store. No in-memory fixture substitution or fake DB fallbacks.
-2. **Deterministic Provenance**: Backward trace algorithms recursively traverse the directed reasoning DAG from any Decision or Claim back to the motivating literature.
-3. **Multi-Tenant Workspace Isolation**: Research workspaces are isolated at the database query level with strict JWT authentication and role-based permissions.
+2. **Multi-Tenant Workspace & Project Isolation**: Research workspaces and projects are isolated at the database query level with strict JWT authentication and role-based permissions (`Owner`, `Admin`, `Researcher`, `Viewer`).
+3. **Deterministic Provenance**: Backward trace algorithms recursively traverse the directed reasoning DAG from any Decision or Claim back to the motivating literature.
 4. **Scientific Integrity**: Empirical metrics and execution states reflect actual benchmark outcomes. Unexecuted experiments remain strictly in the `planned` state.
 
 ---
 
 ## 🏛️ Research Ontology (8 Archetypes + Semantic Relations)
-
-ResearchOS formalizes research into eight first-class entities with strict directional semantics:
 
 ```text
 [ Question ] ──(informs)──► [ Paper ] ──(motivates)──► [ Literature Gap ]
@@ -79,33 +77,37 @@ ResearchOS formalizes research into eight first-class entities with strict direc
 
 ## ⚡ Key Modules & Interactive Interfaces
 
-### 1. 🌌 Spatial Graph Canvas (`@xyflow/react`)
+### 1. 🏢 Multi-Workspace & Research Project Switcher
+- Instant dropdown switching between research labs (`WorkspaceSwitcher`) and projects (`ProjectSwitcher`).
+- Dedicated **Workspace Members Modal** allowing lab owners to invite colleagues and assign roles.
+
+### 2. 🌌 Spatial Graph Canvas (`@xyflow/react`)
 - **Interactive Custom Nodes**: Archetype-specific colorways, metric chips, status indicators, and connection handles.
 - **Automated Pipeline Layout**: Repositions nodes left-to-right following the canonical research lifecycle:
   `Questions ➔ Literature ➔ Gaps ➔ Hypotheses ➔ Experiments ➔ Results ➔ Decisions ➔ Claims`.
 - **Semantic Edge Styling**: Color-coded edges (`#10b981` supports, `#ef4444` refutes, `#6366f1` motivates/tests) with animated directional flow.
 - **DAG Cycle Detection**: Real-time BFS cycle prevention protecting knowledge graph integrity.
 
-### 2. 📋 Literature Matrix View
+### 3. 📋 Literature Matrix View
 - Side-by-side comparative analysis of peer-reviewed papers.
 - Quantitative synthesis across methods, hardware testbeds, power envelopes, compression benchmarks, key findings, and documented limitations.
 
-### 3. 🔍 Backward Traceability Engine
+### 4. 🔍 Backward Traceability Engine
 - Deterministic backward provenance traversal from any Decision (e.g. `D-001`) through Results, Experiments, Hypotheses, and Literature.
 - Visual chain inspection, grounding status, and lineage path generation.
 
-### 4. 🛡️ Evidentiary Claim Auditor
+### 5. 🛡️ Evidentiary Claim Auditor
 - **Confidence Scoring**: Dynamically computed from empirical trials and replication strength.
 - **Direct Backing Tracing**: Highlights which empirical metrics validate the assertion.
 - **Constraint Violation Alerts**: Warns if thermal thresholds (e.g. capsule shell >41.5°C) or latency limits are breached.
 
-### 5. 📖 End-to-End Evidence Narrative
+### 6. 📖 End-to-End Evidence Narrative
 - Chronological, step-by-step audit trail from the initial clinical question to final hardware firmware decisions.
 
-### 6. 🗃️ Entity Registry & CSV Export
+### 7. 🗃️ Entity Registry & CSV Export
 - Searchable, filterable tabular registry with instant sorting, type classification, and one-click CSV export.
 
-### 7. ⌨️ Global Command Palette (`Cmd+K` / `Ctrl+K`)
+### 8. ⌨️ Global Command Palette (`Cmd+K` / `Ctrl+K`)
 - Instant fuzzy navigation to any entity code (e.g. `H-001`, `P-003`, `D-001`, `C-001`) or workspace view mode.
 
 ---
@@ -116,31 +118,31 @@ ResearchOS formalizes research into eight first-class entities with strict direc
 researchos/
 ├── backend/                       # Canonical FastAPI + PostgreSQL Backend
 │   ├── app/
-│   │   ├── api/v1/                # REST API Routers (auth, questions, papers, gaps, hypotheses, experiments, results, decisions, claims, relationships, graph, workspaces, seed)
-│   │   ├── models/                # SQLAlchemy 2.0 Async Models (13 tables with CASCADE/RESTRICT constraints)
+│   │   ├── api/v1/                # REST API Routers (auth, workspaces, projects, questions, papers, gaps, hypotheses, experiments, results, decisions, claims, relationships, graph, synthesis, seed)
+│   │   ├── models/                # SQLAlchemy 2.0 Async Models (14 tables with CASCADE/RESTRICT constraints)
 │   │   ├── schemas/               # Pydantic v2 Request/Response Schemas with robust ORM validators
-│   │   ├── services/              # Domain Services (auth, graph traversal, lineage, audit, seed)
+│   │   ├── services/              # Domain Services (auth, project, graph traversal, lineage, audit, seed)
 │   │   ├── repositories/          # Async database repository layer
 │   │   ├── core/                  # Database engine (NullPool), auth security, config validation
 │   │   └── main.py                # FastAPI app initialization, middleware & exception handlers
 │   ├── alembic/                   # Database migrations (PostgreSQL DDL)
-│   ├── tests/                     # Pytest suite running against live PostgreSQL
+│   ├── tests/                     # 31 Pytest suites running against live PostgreSQL
 │   ├── Dockerfile                 # Backend container definition
 │   └── requirements.txt           # Python dependencies
 │
-├── src/                           # Frontend Client (React 19 + TypeScript + Tailwind v4)
+├── src/                           # Frontend Client (React 19 + TypeScript + Tailwind v4 + Zustand)
 │   ├── types/                     # Canonical domain interfaces & schema types
 │   ├── store/                     # Zustand store with authoritative API synchronization
 │   ├── utils/                     # Semantic ontology rules & DAG cycle detection
 │   ├── services/api/              # Typed REST API client bindings
-│   ├── features/auth/             # Authentication UI, forms, and token store
+│   ├── features/                  # Feature-based modules (auth, workspaces, projects)
 │   ├── components/
 │   │   ├── canvas/                # @xyflow/react canvas, custom nodes, edges, pipeline layout
 │   │   ├── inspector/             # Precision node inspector drawer
 │   │   ├── synthesis/             # Literature matrix, gap discovery, claims auditor, evidence chain
 │   │   ├── table/                 # Tabular entity registry & CSV export
-│   │   ├── layout/                # App header, navigation, breadcrumbs
-│   │   └── modals/                # Create entity, link modal, command palette, trace modal
+│   │   ├── layout/                # App header with Workspace/Project Switchers
+│   │   └── modals/                # Create entity, link modal, command palette, trace modal, members modal
 │   ├── App.tsx                    # Root application component
 │   └── main.tsx                   # React DOM bootstrap
 │
@@ -155,16 +157,11 @@ researchos/
 
 ## 🚀 Getting Started
 
-### Prerequisites
-- Node.js >= 18
-- Python >= 3.11
-- PostgreSQL >= 15 (or Docker)
-
 ### Option A: Local Development
 
 ```bash
 # 1. Start PostgreSQL (e.g. via Docker)
-docker run --name researchos-db -e POSTGRES_USER=researchos -e POSTGRES_PASSWORD=researchos_secret_password -e POSTGRES_DB=researchos_db -p 5432:5432 -d postgres:15-alpine
+docker run --name researchos-db -e POSTGRES_USER=researchos -e POSTGRES_PASSWORD=researchos_secret_password -e POSTGRES_DB=researchos_db -p 5432:5432 -d postgres:16-alpine
 
 # 2. Setup & Start Backend (FastAPI)
 cd backend
@@ -177,7 +174,7 @@ cp .env.example .env
 alembic upgrade head
 
 # Start FastAPI server
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 # 3. Setup & Start Frontend (React + Vite)
 # In root directory:
@@ -205,7 +202,7 @@ docker compose up --build
 ## 🧪 Verification & Test Suite
 
 ```bash
-# 1. Run backend tests against PostgreSQL
+# 1. Run all 31 backend tests against PostgreSQL
 cd backend
 .venv/bin/pytest -v
 
