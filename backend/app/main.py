@@ -3,6 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.v1.auth import router as auth_router
 from app.api.v1.workspaces import router as workspaces_router
+from app.api.v1.research_questions_and_papers import (
+    questions_router,
+    papers_router,
+)
 
 
 def create_application() -> FastAPI:
@@ -25,6 +29,8 @@ def create_application() -> FastAPI:
     # Mount v1 routers
     application.include_router(auth_router, prefix=settings.API_V1_STR)
     application.include_router(workspaces_router, prefix=settings.API_V1_STR)
+    application.include_router(questions_router, prefix=settings.API_V1_STR)
+    application.include_router(papers_router, prefix=settings.API_V1_STR)
 
     @application.get("/health", tags=["Health"])
     async def health_check():
