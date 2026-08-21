@@ -16,6 +16,8 @@ export type RelationType =
   | 'tests'
   | 'supports'
   | 'refutes'
+  | 'produces'
+  | 'depends_on'
   | 'derived_from'
   | 'validates'
   | 'supersedes';

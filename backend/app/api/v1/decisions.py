@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.schemas.decision import DecisionCreate, DecisionRead
 from app.services.decision_service import DecisionService
+from app.services.graph_service import GraphService
 from app.api.deps import get_current_user, get_current_workspace_context
 from app.models.user import User
 from app.models.workspace import WorkspaceMembership
@@ -48,3 +49,21 @@ async def get_decision(
     workspace_id, _ = ws_ctx
     service = DecisionService(db)
     return await service.get_decision(decision_id, workspace_id)
+
+
+@router.get("/{decision_id}/trace", status_code=status.HTTP_200_OK)
+async def get_decision_trace(
+    decision_id: uuid.UUID,
+    ws_ctx: Annotated[tuple[uuid.UUID, WorkspaceMembership], Depends(get_current_workspace_context)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    """Retrieve backwards deterministic provenance trace from the decision to motivating literature."""
+    workspace_id, _ = ws_ctx
+    graph_service = GraphService(db)
+    return await graph_service.trace_lineage(
+        workspace_id=workspace_id,
+        entity_type="decision",
+        entity_id=decision_id,
+        direction="backward",
+    )
+

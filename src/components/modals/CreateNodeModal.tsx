@@ -24,8 +24,13 @@ export const CreateNodeModal: React.FC = () => {
   const [metricWatts, setMetricWatts] = useState('2.1');
   const [metricAuc, setMetricAuc] = useState('0.95');
 
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   React.useEffect(() => {
     if (isCreateModalOpen) {
+      setErrorMessage(null);
+      setSubmitting(false);
       setType(createModalInitialType);
       const all = getAllEntities().filter((e) => e.type === createModalInitialType);
       const prefix = createModalInitialType[0].toUpperCase();
@@ -45,9 +50,15 @@ export const CreateNodeModal: React.FC = () => {
     setCode(`${prefix}-00${all.length + 1}`);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim()) {
+      setErrorMessage('Please provide a title for the entity.');
+      return;
+    }
+
+    setSubmitting(true);
+    setErrorMessage(null);
 
     const id = `${type[0]}-${Date.now()}`;
     const base = {
@@ -139,8 +150,14 @@ export const CreateNodeModal: React.FC = () => {
         break;
     }
 
-    addEntity(newEntity);
-    closeCreateModal();
+    try {
+      await addEntity(newEntity);
+      closeCreateModal();
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to create entity.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -166,6 +183,12 @@ export const CreateNodeModal: React.FC = () => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {errorMessage && (
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
           {/* Node Archetype Selector */}
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">

@@ -31,7 +31,7 @@ import {
   INITIAL_RELATIONSHIPS,
 } from '../data/canonicalWceData';
 import { entitiesApi } from '../services/api/entities.api';
-import { apiClient } from '../services/api/client';
+import { isRelationSemanticallyAllowed, wouldCreateCycle } from '../utils/relationshipRules';
 
 interface ResearchStoreState {
   workspace: Workspace;
@@ -76,8 +76,11 @@ interface ResearchStoreState {
   isAuthModalOpen: boolean;
   setAuthModalOpen: (open: boolean) => void;
 
-  // Sync state
+  // API sync state
   isSyncing: boolean;
+  isSaving: boolean;
+  error: string | null;
+  setError: (error: string | null) => void;
   syncFromBackend: () => Promise<void>;
 
   // Actions
@@ -97,17 +100,17 @@ interface ResearchStoreState {
   setCommandPaletteOpen: (open: boolean) => void;
   setAiModalOpen: (open: boolean) => void;
 
-  // Entity CRUD
-  addEntity: (entity: ResearchEntity) => void;
-  updateEntity: (entity: ResearchEntity) => void;
-  deleteEntity: (id: string, type: EntityType) => void;
+  // Entity CRUD (Async authoritative API transactions)
+  addEntity: (entity: ResearchEntity) => Promise<ResearchEntity>;
+  updateEntity: (entity: ResearchEntity) => Promise<ResearchEntity>;
+  deleteEntity: (id: string, type: EntityType) => Promise<void>;
 
-  // Relationship CRUD
-  addRelationship: (rel: Omit<RelationshipLink, 'id' | 'createdAt'>) => void;
-  deleteRelationship: (id: string) => void;
+  // Relationship CRUD (Async authoritative API transactions)
+  addRelationship: (rel: Omit<RelationshipLink, 'id' | 'createdAt'>) => Promise<RelationshipLink>;
+  deleteRelationship: (id: string) => Promise<void>;
 
   // Reset / Seed
-  resetToCanonicalDataset: () => void;
+  resetToCanonicalDataset: () => Promise<void>;
 
   // Selectors / Helpers
   getAllEntities: () => ResearchEntity[];
@@ -120,31 +123,37 @@ interface ResearchStoreState {
   validateClaimAudit: (claimId: string) => ClaimValidationAudit | null;
 }
 
-const STORAGE_KEY = 'researchos_state_v1';
+const UI_STORAGE_KEY = 'researchos_ui_prefs';
 
-const getInitialState = () => {
+const getSavedUIPrefs = () => {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = localStorage.getItem(UI_STORAGE_KEY);
     if (saved) {
-      const parsed = JSON.parse(saved);
-      return {
-        workspace: parsed.workspace || CANONICAL_WORKSPACE,
-        questions: parsed.questions || INITIAL_QUESTIONS,
-        papers: parsed.papers || INITIAL_PAPERS,
-        gaps: parsed.gaps || INITIAL_GAPS,
-        hypotheses: parsed.hypotheses || INITIAL_HYPOTHESES,
-        experiments: parsed.experiments || INITIAL_EXPERIMENTS,
-        results: parsed.results || INITIAL_RESULTS,
-        decisions: parsed.decisions || INITIAL_DECISIONS,
-        claims: parsed.claims || INITIAL_CLAIMS,
-        relationships: parsed.relationships || INITIAL_RELATIONSHIPS,
-      };
+      return JSON.parse(saved);
     }
   } catch (e) {
-    console.error('Failed to load saved state:', e);
+    console.error('Failed to load UI preferences:', e);
   }
+  return {
+    viewMode: 'canvas' as ViewMode,
+    layoutMode: 'pipeline' as CanvasLayoutMode,
+  };
+};
+
+export const useResearchStore = create<ResearchStoreState>((set, get) => {
+  const initialUIPrefs = getSavedUIPrefs();
+
+  const persistUIPrefs = (prefs: { viewMode?: ViewMode; layoutMode?: CanvasLayoutMode }) => {
+    try {
+      const current = getSavedUIPrefs();
+      localStorage.setItem(UI_STORAGE_KEY, JSON.stringify({ ...current, ...prefs }));
+    } catch (e) {
+      console.error('Failed to persist UI preferences:', e);
+    }
+  };
 
   return {
+    // Initialized from canonical domain dataset
     workspace: CANONICAL_WORKSPACE,
     questions: INITIAL_QUESTIONS,
     papers: INITIAL_PAPERS,
@@ -155,42 +164,13 @@ const getInitialState = () => {
     decisions: INITIAL_DECISIONS,
     claims: INITIAL_CLAIMS,
     relationships: INITIAL_RELATIONSHIPS,
-  };
-};
-
-export const useResearchStore = create<ResearchStoreState>((set, get) => {
-  const initialData = getInitialState();
-
-  const persist = (nextState: Partial<ResearchStoreState>) => {
-    try {
-      const current = get();
-      const toSave = {
-        workspace: nextState.workspace || current.workspace,
-        questions: nextState.questions || current.questions,
-        papers: nextState.papers || current.papers,
-        gaps: nextState.gaps || current.gaps,
-        hypotheses: nextState.hypotheses || current.hypotheses,
-        experiments: nextState.experiments || current.experiments,
-        results: nextState.results || current.results,
-        decisions: nextState.decisions || current.decisions,
-        claims: nextState.claims || current.claims,
-        relationships: nextState.relationships || current.relationships,
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-    } catch (e) {
-      console.error('Failed to persist state:', e);
-    }
-  };
-
-  return {
-    ...initialData,
 
     selectedEntityId: 'h-001',
     selectedEntityType: 'hypothesis',
     isInspectorOpen: true,
 
-    viewMode: 'canvas',
-    layoutMode: 'pipeline',
+    viewMode: initialUIPrefs.viewMode || 'canvas',
+    layoutMode: initialUIPrefs.layoutMode || 'pipeline',
     searchQuery: '',
     typeFilter: 'all',
     highlightedLineage: {
@@ -217,8 +197,12 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
     setAuthModalOpen: (open: boolean) => set({ isAuthModalOpen: open }),
 
     isSyncing: false,
+    isSaving: false,
+    error: null,
+    setError: (error) => set({ error }),
+
     syncFromBackend: async () => {
-      set({ isSyncing: true });
+      set({ isSyncing: true, error: null });
       try {
         const [
           questions,
@@ -242,7 +226,7 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
           entitiesApi.listRelationships().catch(() => get().relationships),
         ]);
 
-        const nextState = {
+        set({
           questions: questions.length ? questions : get().questions,
           papers: papers.length ? papers : get().papers,
           gaps: gaps.length ? gaps : get().gaps,
@@ -252,12 +236,9 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
           decisions: decisions.length ? decisions : get().decisions,
           claims: claims.length ? claims : get().claims,
           relationships: relationships.length ? relationships : get().relationships,
-        };
-
-        set(nextState);
-        persist(nextState);
-      } catch (err) {
-        console.warn('Backend sync failed, using local storage state:', err);
+        });
+      } catch (err: any) {
+        console.warn('Backend sync warning:', err);
       } finally {
         set({ isSyncing: false });
       }
@@ -284,8 +265,14 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
       get().clearLineageHighlight();
     },
 
-    setViewMode: (mode) => set({ viewMode: mode }),
-    setLayoutMode: (mode) => set({ layoutMode: mode }),
+    setViewMode: (mode) => {
+      set({ viewMode: mode });
+      persistUIPrefs({ viewMode: mode });
+    },
+    setLayoutMode: (mode) => {
+      set({ layoutMode: mode });
+      persistUIPrefs({ layoutMode: mode });
+    },
     setSearchQuery: (query) => set({ searchQuery: query }),
     setTypeFilter: (filter) => set({ typeFilter: filter }),
 
@@ -353,225 +340,248 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
     setCommandPaletteOpen: (open) => set({ isCommandPaletteOpen: open }),
     setAiModalOpen: (open) => set({ isAiModalOpen: open }),
 
-    addEntity: (entity) => {
-      // Async persist to backend API
-      const collectionName = `${entity.type}s` as any;
-      if ((entitiesApi as any)[`create${entity.type.charAt(0).toUpperCase() + entity.type.slice(1)}`]) {
-        (entitiesApi as any)[`create${entity.type.charAt(0).toUpperCase() + entity.type.slice(1)}`](entity).catch(
-          (err: any) => console.warn('Background entity API create error:', err)
-        );
-      }
-
-      set((state) => {
-        let updated: Partial<ResearchStoreState> = {};
+    // Authoritative Async Entity Creation
+    addEntity: async (entity) => {
+      set({ isSaving: true, error: null });
+      try {
+        let createdOnServer = entity;
         switch (entity.type) {
           case 'question':
-            updated = { questions: [entity as ResearchQuestionEntity, ...state.questions] };
+            createdOnServer = await entitiesApi.createQuestion(entity);
+            set((state) => ({ questions: [createdOnServer as ResearchQuestionEntity, ...state.questions] }));
             break;
           case 'paper':
-            updated = { papers: [entity as PaperEntity, ...state.papers] };
+            createdOnServer = await entitiesApi.createPaper(entity);
+            set((state) => ({ papers: [createdOnServer as PaperEntity, ...state.papers] }));
             break;
           case 'gap':
-            updated = { gaps: [entity as GapEntity, ...state.gaps] };
+            createdOnServer = await entitiesApi.createGap(entity);
+            set((state) => ({ gaps: [createdOnServer as GapEntity, ...state.gaps] }));
             break;
           case 'hypothesis':
-            updated = { hypotheses: [entity as HypothesisEntity, ...state.hypotheses] };
+            createdOnServer = await entitiesApi.createHypothesis(entity);
+            set((state) => ({ hypotheses: [createdOnServer as HypothesisEntity, ...state.hypotheses] }));
             break;
           case 'experiment':
-            updated = { experiments: [entity as ExperimentEntity, ...state.experiments] };
+            createdOnServer = await entitiesApi.createExperiment(entity);
+            set((state) => ({ experiments: [createdOnServer as ExperimentEntity, ...state.experiments] }));
             break;
           case 'result':
-            updated = { results: [entity as ResultEntity, ...state.results] };
+            createdOnServer = await entitiesApi.createResult(entity);
+            set((state) => ({ results: [createdOnServer as ResultEntity, ...state.results] }));
             break;
           case 'decision':
-            updated = { decisions: [entity as DecisionEntity, ...state.decisions] };
+            createdOnServer = await entitiesApi.createDecision(entity);
+            set((state) => ({ decisions: [createdOnServer as DecisionEntity, ...state.decisions] }));
             break;
           case 'claim':
-            updated = { claims: [entity as ClaimEntity, ...state.claims] };
+            createdOnServer = await entitiesApi.createClaim(entity);
+            set((state) => ({ claims: [createdOnServer as ClaimEntity, ...state.claims] }));
             break;
         }
-        persist(updated);
-        return {
-          ...updated,
-          selectedEntityId: entity.id,
-          selectedEntityType: entity.type,
+
+        set({
+          selectedEntityId: createdOnServer.id,
+          selectedEntityType: createdOnServer.type,
           isInspectorOpen: true,
-        };
-      });
+        });
+
+        return createdOnServer;
+      } catch (err: any) {
+        const msg = err.message || 'Failed to create entity on server.';
+        set({ error: msg });
+        throw err;
+      } finally {
+        set({ isSaving: false });
+      }
     },
 
-    updateEntity: (entity) => {
-      // Async persist to backend API
-      const updateMethod = `update${entity.type.charAt(0).toUpperCase() + entity.type.slice(1)}`;
-      if ((entitiesApi as any)[updateMethod]) {
-        (entitiesApi as any)[updateMethod](entity.id, entity).catch((err: any) =>
-          console.warn('Background entity API update error:', err)
-        );
-      }
-
-      set((state) => {
-        let updated: Partial<ResearchStoreState> = {};
+    // Authoritative Async Entity Update
+    updateEntity: async (entity) => {
+      set({ isSaving: true, error: null });
+      try {
+        let updatedOnServer = entity;
         switch (entity.type) {
           case 'question':
-            updated = {
-              questions: state.questions.map((q) => (q.id === entity.id ? (entity as ResearchQuestionEntity) : q)),
-            };
+            updatedOnServer = await entitiesApi.updateQuestion(entity.id, entity);
+            set((state) => ({
+              questions: state.questions.map((q) => (q.id === entity.id ? (updatedOnServer as ResearchQuestionEntity) : q)),
+            }));
             break;
           case 'paper':
-            updated = {
-              papers: state.papers.map((p) => (p.id === entity.id ? (entity as PaperEntity) : p)),
-            };
+            updatedOnServer = await entitiesApi.updatePaper(entity.id, entity);
+            set((state) => ({
+              papers: state.papers.map((p) => (p.id === entity.id ? (updatedOnServer as PaperEntity) : p)),
+            }));
             break;
           case 'gap':
-            updated = {
-              gaps: state.gaps.map((g) => (g.id === entity.id ? (entity as GapEntity) : g)),
-            };
+            updatedOnServer = await entitiesApi.updateGap(entity.id, entity);
+            set((state) => ({
+              gaps: state.gaps.map((g) => (g.id === entity.id ? (updatedOnServer as GapEntity) : g)),
+            }));
             break;
           case 'hypothesis':
-            updated = {
-              hypotheses: state.hypotheses.map((h) => (h.id === entity.id ? (entity as HypothesisEntity) : h)),
-            };
+            updatedOnServer = await entitiesApi.updateHypothesis(entity.id, entity);
+            set((state) => ({
+              hypotheses: state.hypotheses.map((h) => (h.id === entity.id ? (updatedOnServer as HypothesisEntity) : h)),
+            }));
             break;
           case 'experiment':
-            updated = {
-              experiments: state.experiments.map((e) => (e.id === entity.id ? (entity as ExperimentEntity) : e)),
-            };
+            updatedOnServer = await entitiesApi.updateExperiment(entity.id, entity);
+            set((state) => ({
+              experiments: state.experiments.map((e) => (e.id === entity.id ? (updatedOnServer as ExperimentEntity) : e)),
+            }));
             break;
           case 'result':
-            updated = {
-              results: state.results.map((r) => (r.id === entity.id ? (entity as ResultEntity) : r)),
-            };
+            updatedOnServer = await entitiesApi.updateResult(entity.id, entity);
+            set((state) => ({
+              results: state.results.map((r) => (r.id === entity.id ? (updatedOnServer as ResultEntity) : r)),
+            }));
             break;
           case 'decision':
-            updated = {
-              decisions: state.decisions.map((d) => (d.id === entity.id ? (entity as DecisionEntity) : d)),
-            };
+            updatedOnServer = await entitiesApi.updateDecision(entity.id, entity);
+            set((state) => ({
+              decisions: state.decisions.map((d) => (d.id === entity.id ? (updatedOnServer as DecisionEntity) : d)),
+            }));
             break;
           case 'claim':
-            updated = {
-              claims: state.claims.map((c) => (c.id === entity.id ? (entity as ClaimEntity) : c)),
-            };
+            updatedOnServer = await entitiesApi.updateClaim(entity.id, entity);
+            set((state) => ({
+              claims: state.claims.map((c) => (c.id === entity.id ? (updatedOnServer as ClaimEntity) : c)),
+            }));
             break;
         }
-        persist(updated);
-        return updated;
-      });
+        return updatedOnServer;
+      } catch (err: any) {
+        const msg = err.message || 'Failed to update entity on server.';
+        set({ error: msg });
+        throw err;
+      } finally {
+        set({ isSaving: false });
+      }
     },
 
-    deleteEntity: (id, type) => {
-      // Async persist to backend API
-      const deleteMethod = `delete${type.charAt(0).toUpperCase() + type.slice(1)}`;
-      if ((entitiesApi as any)[deleteMethod]) {
-        (entitiesApi as any)[deleteMethod](id).catch((err: any) =>
-          console.warn('Background entity API delete error:', err)
-        );
-      }
-
-      set((state) => {
-        let updated: Partial<ResearchStoreState> = {};
+    // Authoritative Async Entity Delete
+    deleteEntity: async (id, type) => {
+      set({ isSaving: true, error: null });
+      try {
         switch (type) {
           case 'question':
-            updated = { questions: state.questions.filter((q) => q.id !== id) };
+            await entitiesApi.deleteQuestion(id);
+            set((state) => ({ questions: state.questions.filter((q) => q.id !== id) }));
             break;
           case 'paper':
-            updated = { papers: state.papers.filter((p) => p.id !== id) };
+            await entitiesApi.deletePaper(id);
+            set((state) => ({ papers: state.papers.filter((p) => p.id !== id) }));
             break;
           case 'gap':
-            updated = { gaps: state.gaps.filter((g) => g.id !== id) };
+            await entitiesApi.deleteGap(id);
+            set((state) => ({ gaps: state.gaps.filter((g) => g.id !== id) }));
             break;
           case 'hypothesis':
-            updated = { hypotheses: state.hypotheses.filter((h) => h.id !== id) };
+            await entitiesApi.deleteHypothesis(id);
+            set((state) => ({ hypotheses: state.hypotheses.filter((h) => h.id !== id) }));
             break;
           case 'experiment':
-            updated = { experiments: state.experiments.filter((e) => e.id !== id) };
+            await entitiesApi.deleteExperiment(id);
+            set((state) => ({ experiments: state.experiments.filter((e) => e.id !== id) }));
             break;
           case 'result':
-            updated = { results: state.results.filter((r) => r.id !== id) };
+            await entitiesApi.deleteResult(id);
+            set((state) => ({ results: state.results.filter((r) => r.id !== id) }));
             break;
           case 'decision':
-            updated = { decisions: state.decisions.filter((d) => d.id !== id) };
+            await entitiesApi.deleteDecision(id);
+            set((state) => ({ decisions: state.decisions.filter((d) => d.id !== id) }));
             break;
           case 'claim':
-            updated = { claims: state.claims.filter((c) => c.id !== id) };
+            await entitiesApi.deleteClaim(id);
+            set((state) => ({ claims: state.claims.filter((c) => c.id !== id) }));
             break;
         }
-        // Also remove cascade relationships
-        const filteredRels = state.relationships.filter(
-          (r) => r.sourceId !== id && r.targetId !== id
-        );
-        updated.relationships = filteredRels;
 
-        persist(updated);
-        return {
-          ...updated,
+        // Clean up connected relationships locally
+        set((state) => ({
+          relationships: state.relationships.filter(
+            (r) => r.sourceId !== id && r.targetId !== id
+          ),
           selectedEntityId: state.selectedEntityId === id ? null : state.selectedEntityId,
           isInspectorOpen: state.selectedEntityId === id ? false : state.isInspectorOpen,
-        };
-      });
+        }));
+      } catch (err: any) {
+        const msg = err.message || 'Failed to delete entity on server.';
+        set({ error: msg });
+        throw err;
+      } finally {
+        set({ isSaving: false });
+      }
     },
 
-    addRelationship: (relData) => {
-      const tempId = `rel-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
-      const newRel: RelationshipLink = {
-        ...relData,
-        id: tempId,
-        createdAt: new Date().toISOString(),
-      };
+    // Authoritative Async Relationship Creation with validation
+    addRelationship: async (relData) => {
+      set({ isSaving: true, error: null });
+      try {
+        if (!isRelationSemanticallyAllowed(relData.sourceType, relData.targetType, relData.relationType)) {
+          throw new Error(
+            `Semantic relation '${relData.relationType}' is invalid between ${relData.sourceType} and ${relData.targetType}.`
+          );
+        }
 
-      // Async persist to backend API
-      entitiesApi.createRelationship(relData).catch((err) =>
-        console.warn('Background relationship API create error:', err)
-      );
+        if (wouldCreateCycle(get().relationships, relData.sourceId, relData.targetId)) {
+          throw new Error('Adding this relationship creates a directed cycle in the reasoning graph.');
+        }
 
-      set((state) => {
-        const exists = state.relationships.some(
-          (r) =>
-            r.sourceId === newRel.sourceId &&
-            r.targetId === newRel.targetId &&
-            r.relationType === newRel.relationType
-        );
-        if (exists) return state;
-
-        const updated = { relationships: [...state.relationships, newRel] };
-        persist(updated);
-        return updated;
-      });
+        const newRel = await entitiesApi.createRelationship(relData);
+        set((state) => ({
+          relationships: [newRel, ...state.relationships],
+        }));
+        return newRel;
+      } catch (err: any) {
+        const msg = err.message || 'Failed to create relationship link.';
+        set({ error: msg });
+        throw err;
+      } finally {
+        set({ isSaving: false });
+      }
     },
 
-    deleteRelationship: (id) => {
-      entitiesApi.deleteRelationship(id).catch((err) =>
-        console.warn('Background relationship API delete error:', err)
-      );
-
-      set((state) => {
-        const updated = {
+    // Authoritative Async Relationship Deletion
+    deleteRelationship: async (id) => {
+      set({ isSaving: true, error: null });
+      try {
+        await entitiesApi.deleteRelationship(id);
+        set((state) => ({
           relationships: state.relationships.filter((r) => r.id !== id),
-        };
-        persist(updated);
-        return updated;
-      });
+        }));
+      } catch (err: any) {
+        const msg = err.message || 'Failed to delete relationship link.';
+        set({ error: msg });
+        throw err;
+      } finally {
+        set({ isSaving: false });
+      }
     },
 
-    resetToCanonicalDataset: () => {
-      apiClient.post('/seed').catch(() => {});
-      localStorage.removeItem(STORAGE_KEY);
-      set({
-        workspace: CANONICAL_WORKSPACE,
-        questions: INITIAL_QUESTIONS,
-        papers: INITIAL_PAPERS,
-        gaps: INITIAL_GAPS,
-        hypotheses: INITIAL_HYPOTHESES,
-        experiments: INITIAL_EXPERIMENTS,
-        results: INITIAL_RESULTS,
-        decisions: INITIAL_DECISIONS,
-        claims: INITIAL_CLAIMS,
-        relationships: INITIAL_RELATIONSHIPS,
-        selectedEntityId: 'h-001',
-        selectedEntityType: 'hypothesis',
-        isInspectorOpen: true,
-      });
+    resetToCanonicalDataset: async () => {
+      set({ isSyncing: true, error: null });
+      try {
+        set({
+          questions: INITIAL_QUESTIONS,
+          papers: INITIAL_PAPERS,
+          gaps: INITIAL_GAPS,
+          hypotheses: INITIAL_HYPOTHESES,
+          experiments: INITIAL_EXPERIMENTS,
+          results: INITIAL_RESULTS,
+          decisions: INITIAL_DECISIONS,
+          claims: INITIAL_CLAIMS,
+          relationships: INITIAL_RELATIONSHIPS,
+        });
+      } finally {
+        set({ isSyncing: false });
+      }
     },
 
+    // Selectors
     getAllEntities: () => {
       const state = get();
       return [
@@ -586,66 +596,39 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
       ];
     },
 
-    getEntityById: (id: string) => {
+    getEntityById: (id) => {
       const all = get().getAllEntities();
       return all.find((e) => e.id === id);
     },
 
-    getUpstreamEntities: (id: string) => {
-      const rels = get().relationships;
-      const all = get().getAllEntities();
-      const parentIds = rels.filter((r) => r.targetId === id).map((r) => r.sourceId);
-      return all.filter((e) => parentIds.includes(e.id));
+    getUpstreamEntities: (id) => {
+      const state = get();
+      const directUpstreamIds = state.relationships
+        .filter((r) => r.targetId === id)
+        .map((r) => r.sourceId);
+
+      const all = state.getAllEntities();
+      return all.filter((e) => directUpstreamIds.includes(e.id));
     },
 
-    getDownstreamEntities: (id: string) => {
-      const rels = get().relationships;
-      const all = get().getAllEntities();
-      const childIds = rels.filter((r) => r.sourceId === id).map((r) => r.targetId);
-      return all.filter((e) => childIds.includes(e.id));
+    getDownstreamEntities: (id) => {
+      const state = get();
+      const directDownstreamIds = state.relationships
+        .filter((r) => r.sourceId === id)
+        .map((r) => r.targetId);
+
+      const all = state.getAllEntities();
+      return all.filter((e) => directDownstreamIds.includes(e.id));
     },
 
-    getConnectedRelationships: (id: string) => {
-      const rels = get().relationships;
-      return rels.filter((r) => r.sourceId === id || r.targetId === id);
+    getConnectedRelationships: (id) => {
+      return get().relationships.filter((r) => r.sourceId === id || r.targetId === id);
     },
 
     getLiteratureMatrix: () => {
-      const papers = get().papers;
-      return papers.map((p) => {
-        const text = `${p.abstract || ''} ${p.notes || ''}`.toLowerCase();
-        let methodology = 'Transformer / Edge Architecture Optimization';
-        if (text.includes('quantiz') || text.includes('int4')) {
-          methodology = 'Low-Bit Integer Quantization (INT4/INT8)';
-        } else if (text.includes('patch fold') || text.includes('sparsif')) {
-          methodology = 'Spatial Patch Folding & Token Sparsification';
-        } else if (text.includes('thermal') || text.includes('dissipation')) {
-          methodology = 'In-Vivo Bio-Thermal Profiling & Micro-Electronics Safety';
-        }
-
-        const keyMetrics: Record<string, any> = {};
-        if (p.code === 'P-001') keyMetrics.powerEnvelope = '>12W (Standard ViT Bottleneck)';
-        if (p.code === 'P-002') keyMetrics.compression = '3.8x Memory Reduction / -7.2% Sensitivity';
-        if (p.code === 'P-003') keyMetrics.compression = '50% Token Sparsification / Boundary Retained';
-        if (p.code === 'P-004') keyMetrics.powerBudget = '<= 2.4W Continuous / Max 41.5°C Shell';
-
-        const strengths: string[] = [];
-        const limitations: string[] = [];
-
-        if (p.code === 'P-001') {
-          strengths.push('Rigorous benchmark of multi-center WCE polyp & bleeding datasets');
-          limitations.push('Full-precision attention causes immediate thermal shutdown in closed capsules');
-        } else if (p.code === 'P-002') {
-          strengths.push('Demonstrates lightweight integer arithmetic on microcontrollers');
-          limitations.push('Uniform activation outlier clipping destroys sub-millimeter mucosal vascular gradients');
-        } else if (p.code === 'P-003') {
-          strengths.push('Mathematically preserves boundary gradient variance prior to linear projections');
-          limitations.push('Requires custom hardware kernel implementations on edge NPUs');
-        } else if (p.code === 'P-004') {
-          strengths.push('Empirically defines in-vivo clinical tissue damage threshold in gastrointestinal lumens');
-          limitations.push('Imposes an uncompromising 2.5W thermal dissipation ceiling on all edge models');
-        }
-
+      const state = get();
+      return state.papers.map((p) => {
+        const metadata = p.metadata || {};
         return {
           paperId: p.id,
           paperCode: p.code,
@@ -653,123 +636,94 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
           authors: p.authors.join(', '),
           year: p.year,
           venue: p.venue,
-          methodology,
-          keyMetrics,
-          strengths,
-          limitations,
+          methodology: metadata.methodology || 'Deep Learning / Model Compression',
+          keyMetrics: metadata.keyMetrics || {
+            fps: metadata.throughputFps || 28.5,
+            powerWatts: metadata.powerWatts || 2.4,
+            auc: metadata.auc || 0.94,
+          },
+          strengths: metadata.strengths || ['Strong baseline performance', 'Real-world endoscopy dataset validation'],
+          limitations: metadata.limitations || [
+            'Exceeds 1.2W capsule battery constraint',
+            'Requires high hardware compute overhead',
+          ],
         };
       });
     },
 
     getDiscoveredGaps: () => {
-      const papers = get().papers;
-      const codes = papers.map((p) => p.code);
-      return [
-        {
-          title: 'Dynamic Token Gating for Non-Pathological Mucosa Frames',
-          description:
-            'Over 88% of small intestine endoscopic frames contain healthy mucosa. Executing full multi-head Transformer attention on every frame drains 70% of the capsule battery.',
-          impactLevel: 'high',
-          motivatingPaperCodes: codes.filter((c) => ['P-001', 'P-004'].includes(c)),
+      const state = get();
+      return state.gaps.map((g) => {
+        const metadata = g.metadata || {};
+        return {
+          title: g.title,
+          description: g.description,
+          impactLevel: g.impactLevel,
+          motivatingPaperCodes: metadata.motivatingPaperCodes || ['P-001', 'P-002'],
           proposedHypothesis:
-            'A 2-stage lightweight gating network that dynamically throttles deep attention on normal frames cuts energy draw by 42% while retaining 100% bleeding recall.',
+            metadata.proposedHypothesis ||
+            'Hybrid Layer-Folding and structured channel pruning enables sub-1.2W inference.',
           recommendedExperimentProtocol:
-            'Train lightweight MobileNetV4 gate on Kvasir-Capsule; profile power consumption on Jetson Nano across 20 full-length 8-hour video feeds.',
-        },
-        {
-          title: 'Activation Outlier Channel Splitting for 4-bit Quantization',
-          description:
-            'Mucosal lesion color boundaries create isolated channel activation outliers in Transformer MLP blocks. Uniform per-tensor INT4 quantization crushes these channels, causing false negative diagnostic predictions.',
-          impactLevel: 'critical',
-          motivatingPaperCodes: codes.filter((c) => ['P-002', 'P-003'].includes(c)),
-          proposedHypothesis:
-            'Channel-splitting the top 1.5% activation outliers into dedicated INT8 paths while quantizing 98.5% of weights to INT4 recovers full FP32 AUC while maintaining 45+ FPS.',
-          recommendedExperimentProtocol:
-            'Implement mixed-precision kernel in TensorRT / TVM; benchmark ROC-AUC curve on subtle vascular ectasias.',
-        },
-        {
-          title: 'Adaptive Frame-Rate Throttling Governed by Ingestible Transit Velocity',
-          description:
-            'Capsule speed varies between 0.2 cm/s in the duodenum to 4.5 cm/s in the ileum. Fixed 45 FPS capture results in unnecessary duplicate frames during peristaltic stagnation.',
-          impactLevel: 'medium',
-          motivatingPaperCodes: codes.filter((c) => ['P-001', 'P-004'].includes(c)),
-          proposedHypothesis:
-            'Optical flow-based peristaltic motion estimation on-chip allows dynamic throttling between 10 FPS (stagnant) and 60 FPS (rapid transit), preserving battery life for full 10-hour transit.',
-          recommendedExperimentProtocol:
-            'Simulate realistic peristaltic velocity profiles in robotic bowel model; measure total battery duration and mucosal coverage percentage.',
-        },
-      ];
+            metadata.recommendedExperimentProtocol ||
+            'Evaluate INT4 quantization with folded residual blocks on 10,000 WCE frames.',
+        };
+      });
     },
 
-    validateClaimAudit: (claimId: string) => {
+    validateClaimAudit: (claimId) => {
       const state = get();
       const claim = state.claims.find((c) => c.id === claimId);
       if (!claim) return null;
 
-      const rels = state.relationships;
-      const supportingResultIds = rels
-        .filter((r) => r.targetId === claim.id && r.sourceType === 'result' && ['supports', 'produces', 'validates'].includes(r.relationType))
-        .map((r) => r.sourceId);
+      const incomingRels = state.relationships.filter((r) => r.targetId === claim.id);
+      const supportingResults: any[] = [];
+      const contradictingResults: any[] = [];
+      const citingPapers: any[] = [];
 
-      const contradictingResultIds = rels
-        .filter((r) => r.targetId === claim.id && r.sourceType === 'result' && ['refutes', 'contradicts'].includes(r.relationType))
-        .map((r) => r.sourceId);
+      incomingRels.forEach((rel) => {
+        if (rel.sourceType === 'result') {
+          const res = state.results.find((r) => r.id === rel.sourceId);
+          if (res) {
+            if (rel.relationType === 'supports' || rel.relationType === 'validates') {
+              supportingResults.push({
+                id: res.id,
+                code: res.code,
+                title: res.title,
+                summary: res.summary,
+                metrics: res.metrics,
+                status: res.status,
+              });
+            } else if (rel.relationType === 'refutes') {
+              contradictingResults.push({
+                id: res.id,
+                code: res.code,
+                title: res.title,
+                summary: res.summary,
+                metrics: res.metrics,
+              });
+            }
+          }
+        } else if (rel.sourceType === 'paper') {
+          const p = state.papers.find((paper) => paper.id === rel.sourceId);
+          if (p) {
+            citingPapers.push({
+              id: p.id,
+              code: p.code,
+              title: p.title,
+              year: p.year,
+              venue: p.venue,
+            });
+          }
+        }
+      });
 
-      const citingPaperIds = rels
-        .filter((r) => r.targetId === claim.id && r.sourceType === 'paper' && r.relationType === 'cites')
-        .map((r) => r.sourceId);
-
-      const supportingResults = state.results
-        .filter((r) => supportingResultIds.includes(r.id))
-        .map((r) => ({
-          id: r.id,
-          code: r.code,
-          title: r.title,
-          summary: r.summary,
-          metrics: r.metrics,
-          status: r.status,
-        }));
-
-      const contradictingResults = state.results
-        .filter((r) => contradictingResultIds.includes(r.id))
-        .map((r) => ({
-          id: r.id,
-          code: r.code,
-          title: r.title,
-          summary: r.summary,
-          metrics: r.metrics,
-        }));
-
-      const citingPapers = state.papers
-        .filter((p) => citingPaperIds.includes(p.id))
-        .map((p) => ({
-          id: p.id,
-          code: p.code,
-          title: p.title,
-          year: p.year,
-          venue: p.venue,
-        }));
-
-      let supportLevel: ClaimValidationAudit['supportLevel'] = 'unsupported';
-      let evidentiaryScore = 0.3;
-      let critique = 'Claim currently lacks directly linked empirical results in the workspace graph.';
-      let actions = ['Design and link an experiment to generate validating results'];
-
+      let supportLevel: 'strongly_supported' | 'partially_supported' | 'unsupported' | 'contradicted' = 'unsupported';
       if (contradictingResults.length > 0) {
         supportLevel = 'contradicted';
-        evidentiaryScore = 0.2;
-        critique = `Claim is contradicted by ${contradictingResults.length} empirical result(s) exceeding safety or accuracy limits.`;
-        actions = ['Re-evaluate claim boundaries', 'Execute clarifying benchmark experiments'];
       } else if (supportingResults.length >= 2) {
         supportLevel = 'strongly_supported';
-        evidentiaryScore = Math.min(0.98, 0.85 + 0.05 * supportingResults.length);
-        critique = `Claim is backed by ${supportingResults.length} multi-modal empirical results with verified metrics (e.g. throughput, thermal profiling).`;
-        actions = ['Ready for publication and decision adoption', 'Include in master claims table'];
       } else if (supportingResults.length === 1) {
         supportLevel = 'partially_supported';
-        evidentiaryScore = 0.75;
-        critique = 'Claim has 1 supporting empirical result. Additional replication on independent datasets is recommended.';
-        actions = ['Conduct second independent trial', 'Cross-validate on external clinical datasets'];
       }
 
       return {
@@ -777,13 +731,19 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
         claimCode: claim.code,
         claimStatement: claim.statement,
         currentStatus: claim.status,
-        evidentiaryScore,
+        evidentiaryScore: claim.confidenceScore,
         supportLevel,
         supportingResults,
         contradictingResults,
         citingPapers,
-        validationCritique: critique,
-        recommendedActions: actions,
+        validationCritique:
+          supportLevel === 'strongly_supported'
+            ? 'Empirically substantiated across independent compression experiments without thermal degradation.'
+            : 'Pending additional multi-run experimental validation.',
+        recommendedActions:
+          supportLevel === 'strongly_supported'
+            ? ['Ready for inclusion in manuscript Section 4 Results.']
+            : ['Execute ablation experiments to strengthen statistical confidence.'],
       };
     },
   };
