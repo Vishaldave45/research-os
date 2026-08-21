@@ -152,9 +152,22 @@ export const Header: React.FC = () => {
             }
           }}
           title="Reset to Canonical WCE dataset"
-          className="rounded-xl border border-slate-200 bg-white p-2 text-slate-400 hover:bg-slate-50 hover:text-rose-600 transition-colors"
+          className="rounded-xl border border-slate-200 bg-white p-2 text-slate-400 hover:bg-slate-50 hover:text-rose-600 transition-colors cursor-pointer"
         >
           <RefreshCw className="h-4 w-4" />
+        </button>
+
+        {/* Auth Profile Trigger */}
+        <button
+          onClick={() => {
+            const { setAuthModalOpen } = useResearchStore.getState();
+            setAuthModalOpen(true);
+          }}
+          title="Manage Researcher Profile & Workspaces"
+          className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+        >
+          <div className="w-2 h-2 rounded-full bg-emerald-500" />
+          <span className="hidden sm:inline">Elena R.</span>
         </button>
       </div>
     </header>

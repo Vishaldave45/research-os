@@ -333,6 +333,17 @@ export const NodeInspector: React.FC = () => {
                         <strong className="text-slate-700">Implications:</strong> {entity.implications}
                       </p>
                     )}
+                    <button
+                      id="inspect-trace-evidence-btn"
+                      onClick={() => {
+                        const { openTraceModal } = useResearchStore.getState();
+                        openTraceModal(entity.id);
+                      }}
+                      className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors shadow-xs"
+                    >
+                      <GitPullRequest className="h-3.5 w-3.5" />
+                      <span>Trace Supporting Evidence Chain</span>
+                    </button>
                   </div>
                 </div>
               )}

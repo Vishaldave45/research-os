@@ -30,6 +30,8 @@ import {
   INITIAL_CLAIMS,
   INITIAL_RELATIONSHIPS,
 } from '../data/canonicalWceData';
+import { entitiesApi } from '../services/api/entities.api';
+import { apiClient } from '../services/api/client';
 
 interface ResearchStoreState {
   workspace: Workspace;
@@ -63,6 +65,20 @@ interface ResearchStoreState {
   linkModalSourceId: string | null;
   isCommandPaletteOpen: boolean;
   isAiModalOpen: boolean;
+
+  // Trace Evidence Modal
+  isTraceModalOpen: boolean;
+  traceDecisionId: string | null;
+  openTraceModal: (decisionId: string) => void;
+  closeTraceModal: () => void;
+
+  // Auth Modal
+  isAuthModalOpen: boolean;
+  setAuthModalOpen: (open: boolean) => void;
+
+  // Sync state
+  isSyncing: boolean;
+  syncFromBackend: () => Promise<void>;
 
   // Actions
   selectEntity: (id: string | null, type?: EntityType) => void;
@@ -190,6 +206,63 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
     isCommandPaletteOpen: false,
     isAiModalOpen: false,
 
+    isTraceModalOpen: false,
+    traceDecisionId: null,
+    openTraceModal: (decisionId: string) =>
+      set({ isTraceModalOpen: true, traceDecisionId: decisionId }),
+    closeTraceModal: () =>
+      set({ isTraceModalOpen: false, traceDecisionId: null }),
+
+    isAuthModalOpen: false,
+    setAuthModalOpen: (open: boolean) => set({ isAuthModalOpen: open }),
+
+    isSyncing: false,
+    syncFromBackend: async () => {
+      set({ isSyncing: true });
+      try {
+        const [
+          questions,
+          papers,
+          gaps,
+          hypotheses,
+          experiments,
+          results,
+          decisions,
+          claims,
+          relationships,
+        ] = await Promise.all([
+          entitiesApi.listQuestions().catch(() => get().questions),
+          entitiesApi.listPapers().catch(() => get().papers),
+          entitiesApi.listGaps().catch(() => get().gaps),
+          entitiesApi.listHypotheses().catch(() => get().hypotheses),
+          entitiesApi.listExperiments().catch(() => get().experiments),
+          entitiesApi.listResults().catch(() => get().results),
+          entitiesApi.listDecisions().catch(() => get().decisions),
+          entitiesApi.listClaims().catch(() => get().claims),
+          entitiesApi.listRelationships().catch(() => get().relationships),
+        ]);
+
+        const nextState = {
+          questions: questions.length ? questions : get().questions,
+          papers: papers.length ? papers : get().papers,
+          gaps: gaps.length ? gaps : get().gaps,
+          hypotheses: hypotheses.length ? hypotheses : get().hypotheses,
+          experiments: experiments.length ? experiments : get().experiments,
+          results: results.length ? results : get().results,
+          decisions: decisions.length ? decisions : get().decisions,
+          claims: claims.length ? claims : get().claims,
+          relationships: relationships.length ? relationships : get().relationships,
+        };
+
+        set(nextState);
+        persist(nextState);
+      } catch (err) {
+        console.warn('Backend sync failed, using local storage state:', err);
+      } finally {
+        set({ isSyncing: false });
+      }
+    },
+
     selectEntity: (id, type) => {
       if (!id) {
         set({ selectedEntityId: null, selectedEntityType: null, isInspectorOpen: false });
@@ -225,7 +298,7 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
       const upstreamIds = new Set<string>();
       const downstreamIds = new Set<string>();
 
-      // Traverse upstream (nodes pointing to nodeId or sources when nodeId is target)
+      // Traverse upstream
       const findUpstream = (targetId: string) => {
         rels.forEach((r) => {
           if (r.targetId === targetId && !upstreamIds.has(r.sourceId)) {
@@ -235,7 +308,7 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
         });
       };
 
-      // Traverse downstream (nodes target of nodeId or targets when nodeId is source)
+      // Traverse downstream
       const findDownstream = (sourceId: string) => {
         rels.forEach((r) => {
           if (r.sourceId === sourceId && !downstreamIds.has(r.targetId)) {
@@ -281,6 +354,14 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
     setAiModalOpen: (open) => set({ isAiModalOpen: open }),
 
     addEntity: (entity) => {
+      // Async persist to backend API
+      const collectionName = `${entity.type}s` as any;
+      if ((entitiesApi as any)[`create${entity.type.charAt(0).toUpperCase() + entity.type.slice(1)}`]) {
+        (entitiesApi as any)[`create${entity.type.charAt(0).toUpperCase() + entity.type.slice(1)}`](entity).catch(
+          (err: any) => console.warn('Background entity API create error:', err)
+        );
+      }
+
       set((state) => {
         let updated: Partial<ResearchStoreState> = {};
         switch (entity.type) {
@@ -320,6 +401,14 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
     },
 
     updateEntity: (entity) => {
+      // Async persist to backend API
+      const updateMethod = `update${entity.type.charAt(0).toUpperCase() + entity.type.slice(1)}`;
+      if ((entitiesApi as any)[updateMethod]) {
+        (entitiesApi as any)[updateMethod](entity.id, entity).catch((err: any) =>
+          console.warn('Background entity API update error:', err)
+        );
+      }
+
       set((state) => {
         let updated: Partial<ResearchStoreState> = {};
         switch (entity.type) {
@@ -370,6 +459,14 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
     },
 
     deleteEntity: (id, type) => {
+      // Async persist to backend API
+      const deleteMethod = `delete${type.charAt(0).toUpperCase() + type.slice(1)}`;
+      if ((entitiesApi as any)[deleteMethod]) {
+        (entitiesApi as any)[deleteMethod](id).catch((err: any) =>
+          console.warn('Background entity API delete error:', err)
+        );
+      }
+
       set((state) => {
         let updated: Partial<ResearchStoreState> = {};
         switch (type) {
@@ -414,13 +511,19 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
     },
 
     addRelationship: (relData) => {
+      const tempId = `rel-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
       const newRel: RelationshipLink = {
         ...relData,
-        id: `rel-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        id: tempId,
         createdAt: new Date().toISOString(),
       };
+
+      // Async persist to backend API
+      entitiesApi.createRelationship(relData).catch((err) =>
+        console.warn('Background relationship API create error:', err)
+      );
+
       set((state) => {
-        // Prevent duplicate relationships
         const exists = state.relationships.some(
           (r) =>
             r.sourceId === newRel.sourceId &&
@@ -436,6 +539,10 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
     },
 
     deleteRelationship: (id) => {
+      entitiesApi.deleteRelationship(id).catch((err) =>
+        console.warn('Background relationship API delete error:', err)
+      );
+
       set((state) => {
         const updated = {
           relationships: state.relationships.filter((r) => r.id !== id),
@@ -446,6 +553,7 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
     },
 
     resetToCanonicalDataset: () => {
+      apiClient.post('/seed').catch(() => {});
       localStorage.removeItem(STORAGE_KEY);
       set({
         workspace: CANONICAL_WORKSPACE,

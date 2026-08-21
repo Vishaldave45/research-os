@@ -118,6 +118,8 @@ export interface RelationshipLink {
   targetId: string;
   relationType: RelationType;
   description?: string;
+  notes?: string;
+  confidence?: number;
   createdAt: string;
 }
 
