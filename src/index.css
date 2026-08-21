@@ -1,1 +1,33 @@
 @import "tailwindcss";
+@import "@xyflow/react/dist/style.css";
+
+/* Custom scrollbars and canvas styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.4);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.7);
+}
+
+.react-flow__attribution {
+  display: none !important;
+}
+
+.react-flow__handle {
+  width: 9px !important;
+  height: 9px !important;
+  border-radius: 9999px !important;
+  border: 2px solid white !important;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+.react-flow__handle:hover {
+  transform: scale(1.3);
+}
