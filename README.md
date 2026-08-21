@@ -5,6 +5,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue?style=for-the-badge&logo=typescript)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688?style=for-the-badge&logo=fastapi)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql)
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-red?style=for-the-badge&logo=sqlalchemy)
 ![React](https://img.shields.io/badge/React-19-61dafb?style=for-the-badge&logo=react)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38bdf8?style=for-the-badge&logo=tailwindcss)
 ![XYFlow React](https://img.shields.io/badge/@xyflow/react-12.11-ff0072?style=for-the-badge)
@@ -18,7 +19,7 @@
 
 ---
 
-## 🧭 Overview & Motivation
+## 🧭 Overview & Core Principles
 
 Scientific and deep-tech engineering workflows frequently suffer from **provenance fragmentation**:
 - Literature citations live disconnected in reference managers.
@@ -28,16 +29,22 @@ Scientific and deep-tech engineering workflows frequently suffer from **provenan
 
 **ResearchOS** resolves this by modeling scientific research as a **strongly-typed, directed acyclic reasoning graph (DAG)**. Every scientific claim and engineering decision is deterministically traceable backward to its empirical results, experimental protocols, hypotheses, literature gaps, and original inquiries.
 
+### Key Guarantees:
+1. **Single Source of Truth**: All data persists in PostgreSQL via FastAPI REST endpoints and synchronizes to the frontend Zustand store. No in-memory fixture substitution or fake DB fallbacks.
+2. **Deterministic Provenance**: Backward trace algorithms recursively traverse the directed reasoning DAG from any Decision or Claim back to the motivating literature.
+3. **Multi-Tenant Workspace Isolation**: Research workspaces are isolated at the database query level with strict JWT authentication and role-based permissions.
+4. **Scientific Integrity**: Empirical metrics and execution states reflect actual benchmark outcomes. Unexecuted experiments remain strictly in the `planned` state.
+
 ---
 
-## 🏛️ Research Ontology (8 Archetypes + 8 Semantic Edges)
+## 🏛️ Research Ontology (8 Archetypes + Semantic Relations)
 
 ResearchOS formalizes research into eight first-class entities with strict directional semantics:
 
-```
+```text
 [ Question ] ──(informs)──► [ Paper ] ──(motivates)──► [ Literature Gap ]
                                                               │
-                                                        (motivates)
+                                                         (motivates)
                                                               ▼
 [ Decision ] ◄──(supports)── [ Result ] ◄──(tests)── [ Hypothesis ]
      │                              ▲
@@ -54,18 +61,18 @@ ResearchOS formalizes research into eight first-class entities with strict direc
 | ⚠️ | **Literature Gap** | `G-###` | Identified frontier blindspots, impact level, unaddressed constraints |
 | 💡 | **Hypothesis** | `H-###` | Testable, falsifiable conjectures with formal rationale & confidence score |
 | 🧪 | **Experiment** | `E-###` | Concrete protocol, hardware platform, batch configurations, parameters |
-| 📊 | **Empirical Result** | `R-###` | Quantitative metrics (Throughput FPS, Power Watts, AUC, Temperature) |
+| 📊 | **Empirical Result** | `R-###` | Quantitative metrics (FPS, Power Watts, AUC, Temperature, Latency) |
 | 🔀 | **Decision / Verdict** | `D-###` | Architecture decisions, firmware acceptance/rejection, trade-off rationale |
 | 🛡️ | **Scientific Claim** | `C-###` | Grounded assertions with computed evidentiary confidence scores (0–100%) |
 
-### 2. Directed Relationship Semantics
-- `cites`: Publication cites or builds upon antecedent literature.
-- `informs`: Theoretical or domain knowledge provides context for an inquiry.
+### 2. Directed Relationship Ontology
+- `informs`: Theoretical or domain knowledge provides context for an inquiry or gap.
 - `motivates`: Literature gap or clinical requirement prompts a new hypothesis.
 - `addresses`: Novel method or hypothesis directly solves a question or gap.
 - `tests`: Benchmark experiment executes validation protocol on a hypothesis.
-- `supports`: Empirical result validates or confirms a hypothesis/claim.
-- `refutes`: Empirical result falsifies or exposes failure modes of a hypothesis.
+- `supports`: Empirical result validates or confirms a hypothesis, decision, or claim.
+- `refutes`: Empirical result falsifies or exposes failure modes of a hypothesis or claim.
+- `cites`: Publication cites or builds upon antecedent literature.
 - `derived_from`: High-level claim or production decision originates from upstream findings.
 
 ---
@@ -73,11 +80,11 @@ ResearchOS formalizes research into eight first-class entities with strict direc
 ## ⚡ Key Modules & Interactive Interfaces
 
 ### 1. 🌌 Spatial Graph Canvas (`@xyflow/react`)
-- **Custom Interactive Nodes**: Archetype-specific colorways, metric strips, status chips, and quick-action connection handles.
-- **Smart Pipeline Alignment**: Repositions all nodes left-to-right following the canonical research lifecycle:
+- **Interactive Custom Nodes**: Archetype-specific colorways, metric chips, status indicators, and connection handles.
+- **Automated Pipeline Layout**: Repositions nodes left-to-right following the canonical research lifecycle:
   `Questions ➔ Literature ➔ Gaps ➔ Hypotheses ➔ Experiments ➔ Results ➔ Decisions ➔ Claims`.
-- **Semantic Edge Routing**: Color-coded edges (`#10b981` supports, `#ef4444` refutes, `#6366f1` motivates/tests) with animated directional particle flow.
-- **Lineage Tracing & Cycle Prevention**: Real-time BFS cycle detection preventing cycles in the reasoning DAG.
+- **Semantic Edge Styling**: Color-coded edges (`#10b981` supports, `#ef4444` refutes, `#6366f1` motivates/tests) with animated directional flow.
+- **DAG Cycle Detection**: Real-time BFS cycle prevention protecting knowledge graph integrity.
 
 ### 2. 📋 Literature Matrix View
 - Side-by-side comparative analysis of peer-reviewed papers.
@@ -85,19 +92,18 @@ ResearchOS formalizes research into eight first-class entities with strict direc
 
 ### 3. 🔍 Backward Traceability Engine
 - Deterministic backward provenance traversal from any Decision (e.g. `D-001`) through Results, Experiments, Hypotheses, and Literature.
-- Provides visual chain inspection, grounding status, and verification scores.
+- Visual chain inspection, grounding status, and lineage path generation.
 
 ### 4. 🛡️ Evidentiary Claim Auditor
-- Evaluates the rigor of scientific claims:
-  - **Evidentiary Confidence Calculation**: Grounded in empirical trial count and replication strength.
-  - **Direct Backing Tracing**: Highlights which empirical metrics validate the assertion.
-  - **Contradiction / Anomaly Detection**: Warns if thermal thresholds (e.g., capsule shell >41.5°C) or latency limits are violated.
+- **Confidence Scoring**: Dynamically computed from empirical trials and replication strength.
+- **Direct Backing Tracing**: Highlights which empirical metrics validate the assertion.
+- **Constraint Violation Alerts**: Warns if thermal thresholds (e.g. capsule shell >41.5°C) or latency limits are breached.
 
 ### 5. 📖 End-to-End Evidence Narrative
 - Chronological, step-by-step audit trail from the initial clinical question to final hardware firmware decisions.
 
 ### 6. 🗃️ Entity Registry & CSV Export
-- Searchable, filterable tabular registry with instant sorting, type classification, and one-click CSV export for external reporting.
+- Searchable, filterable tabular registry with instant sorting, type classification, and one-click CSV export.
 
 ### 7. ⌨️ Global Command Palette (`Cmd+K` / `Ctrl+K`)
 - Instant fuzzy navigation to any entity code (e.g. `H-001`, `P-003`, `D-001`, `C-001`) or workspace view mode.
@@ -106,18 +112,19 @@ ResearchOS formalizes research into eight first-class entities with strict direc
 
 ## 🛠️ Architecture & Project Structure
 
-```
+```text
 researchos/
 ├── backend/                       # Canonical FastAPI + PostgreSQL Backend
 │   ├── app/
-│   │   ├── api/v1/                # REST API Routers (questions, papers, gaps, hypotheses, experiments, results, decisions, claims, relationships, graph, auth)
-│   │   ├── models/                # SQLAlchemy Models (10 tables with foreign keys and cascade rules)
-│   │   ├── schemas/               # Pydantic v2 Request/Response Schemas
-│   │   ├── services/              # Domain Services (graph traversal, decision provenance, seed)
-│   │   ├── core/                  # Database config, auth security, settings
-│   │   └── main.py                # FastAPI app initialization & CORS middleware
-│   ├── alembic/                   # Database migrations
-│   ├── tests/                     # Pytest suite with real database fixtures
+│   │   ├── api/v1/                # REST API Routers (auth, questions, papers, gaps, hypotheses, experiments, results, decisions, claims, relationships, graph, workspaces, seed)
+│   │   ├── models/                # SQLAlchemy 2.0 Async Models (13 tables with CASCADE/RESTRICT constraints)
+│   │   ├── schemas/               # Pydantic v2 Request/Response Schemas with robust ORM validators
+│   │   ├── services/              # Domain Services (auth, graph traversal, lineage, audit, seed)
+│   │   ├── repositories/          # Async database repository layer
+│   │   ├── core/                  # Database engine (NullPool), auth security, config validation
+│   │   └── main.py                # FastAPI app initialization, middleware & exception handlers
+│   ├── alembic/                   # Database migrations (PostgreSQL DDL)
+│   ├── tests/                     # Pytest suite running against live PostgreSQL
 │   ├── Dockerfile                 # Backend container definition
 │   └── requirements.txt           # Python dependencies
 │
@@ -137,56 +144,79 @@ researchos/
 │   ├── App.tsx                    # Root application component
 │   └── main.tsx                   # React DOM bootstrap
 │
-├── docker-compose.yml             # Full-stack composition (FastAPI + PostgreSQL + Vite)
+├── docker-compose.yml             # Full-stack composition (PostgreSQL 15 + FastAPI + Vite)
 ├── Dockerfile                     # Multi-stage production container build
 ├── package.json                   # Web application manifest & scripts
-└── tsconfig.json                  # Strict TypeScript configuration
+├── tsconfig.json                  # Strict TypeScript configuration
+└── .env.example                   # Environment configuration template
 ```
 
 ---
 
 ## 🚀 Getting Started
 
+### Prerequisites
+- Node.js >= 18
+- Python >= 3.11
+- PostgreSQL >= 15 (or Docker)
+
 ### Option A: Local Development
 
 ```bash
-# 1. Backend (FastAPI + PostgreSQL)
+# 1. Start PostgreSQL (e.g. via Docker)
+docker run --name researchos-db -e POSTGRES_USER=researchos -e POSTGRES_PASSWORD=researchos_secret_password -e POSTGRES_DB=researchos_db -p 5432:5432 -d postgres:15-alpine
+
+# 2. Setup & Start Backend (FastAPI)
 cd backend
+python -m venv .venv
 source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+
+# Apply database migrations
+alembic upgrade head
+
+# Start FastAPI server
 uvicorn app.main:app --reload --port 8000
 
-# 2. Frontend (React + Vite)
+# 3. Setup & Start Frontend (React + Vite)
+# In root directory:
 npm install
 npm run dev
 
-# 3. Open http://localhost:3000 in your browser
+# 4. Open http://localhost:3000 in your browser
 ```
 
-### Option B: Full-Stack Docker Compose (FastAPI + PostgreSQL)
+### Option B: Full-Stack Docker Compose
 
 ```bash
-# 1. Start all services (PostgreSQL 15, FastAPI backend, React frontend)
+# Start all services (PostgreSQL, FastAPI Backend, React Frontend)
 docker compose up --build
 
-# 2. Access the services:
-#    - Frontend UI: http://localhost:3000
-#    - FastAPI API Docs (Swagger): http://localhost:8000/docs
-#    - PostgreSQL: localhost:5432
+# Access endpoints:
+# - Frontend UI: http://localhost:3000
+# - FastAPI Swagger Docs: http://localhost:8000/docs
+# - FastAPI Health: http://localhost:8000/health
+# - PostgreSQL: localhost:5432
 ```
 
 ---
 
-## 🧪 Verification & Testing
+## 🧪 Verification & Test Suite
 
 ```bash
-# Run frontend TypeScript type checking
+# 1. Run backend tests against PostgreSQL
+cd backend
+.venv/bin/pytest -v
+
+# 2. Run frontend type checking & lint
 npm run lint
 
-# Build production bundle
+# 3. Build frontend production bundle
 npm run build
 
-# Run backend Python tests
-cd backend && pytest -v
+# 4. Validate Docker Compose configuration
+docker compose config
 ```
 
 ---
