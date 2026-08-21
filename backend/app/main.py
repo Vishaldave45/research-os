@@ -7,6 +7,10 @@ from app.api.v1.research_questions_and_papers import (
     questions_router,
     papers_router,
 )
+from app.api.v1.gap_and_hypothesis import (
+    gaps_router,
+    hypotheses_router,
+)
 
 
 def create_application() -> FastAPI:
@@ -31,6 +35,8 @@ def create_application() -> FastAPI:
     application.include_router(workspaces_router, prefix=settings.API_V1_STR)
     application.include_router(questions_router, prefix=settings.API_V1_STR)
     application.include_router(papers_router, prefix=settings.API_V1_STR)
+    application.include_router(gaps_router, prefix=settings.API_V1_STR)
+    application.include_router(hypotheses_router, prefix=settings.API_V1_STR)
 
     @application.get("/health", tags=["Health"])
     async def health_check():
