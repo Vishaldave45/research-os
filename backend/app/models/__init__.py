@@ -3,6 +3,7 @@ from app.models.base import TimeStampedUUIDModel
 from app.models.user import User
 from app.models.refresh_token import RefreshToken
 from app.models.workspace import Workspace, WorkspaceMembership
+from app.models.project import Project
 from app.models.research_question import ResearchQuestion
 from app.models.paper import Paper
 from app.models.gap import Gap
@@ -20,6 +21,7 @@ __all__ = [
     "RefreshToken",
     "Workspace",
     "WorkspaceMembership",
+    "Project",
     "ResearchQuestion",
     "Paper",
     "Gap",

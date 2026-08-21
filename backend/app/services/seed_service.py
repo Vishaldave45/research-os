@@ -21,6 +21,29 @@ class SeedService:
         Preserves research integrity: all unexecuted experiments are marked as 'planned'
         with zero fabricated metric numbers.
         """
+        # 0. Canonical Research Project
+        from app.models.project import Project
+        from sqlalchemy import select
+        
+        project = await self.db.scalar(
+            select(Project).where(
+                Project.workspace_id == workspace_id,
+                Project.slug == "wce-model-compression",
+            )
+        )
+        if not project:
+            project = Project(
+                workspace_id=workspace_id,
+                name="WCE Model Compression",
+                slug="wce-model-compression",
+                research_area="Medical AI",
+                description="Depth-reduced deep learning models via structured pruning, knowledge distillation, and layer folding for wireless capsule endoscopy.",
+                status="active",
+                created_by=user_id,
+            )
+            self.db.add(project)
+            await self.db.flush()
+
         # 1. Primary Research Question
         q1 = ResearchQuestion(
             workspace_id=workspace_id,

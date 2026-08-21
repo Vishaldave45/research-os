@@ -5,11 +5,13 @@ import { Mail, Lock, LogIn, AlertCircle, Loader2, Eye, EyeOff } from 'lucide-rea
 interface LoginFormProps {
   onSuccess?: () => void;
   onSwitchToRegister?: () => void;
+  onNavigateToForgotPassword?: () => void;
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({
   onSuccess,
   onSwitchToRegister,
+  onNavigateToForgotPassword,
 }) => {
   const { login, isLoading, error, clearError } = useAuthStore();
   const [email, setEmail] = useState('');
@@ -79,6 +81,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
             Password
           </label>
+          {onNavigateToForgotPassword && (
+            <button
+              type="button"
+              onClick={onNavigateToForgotPassword}
+              className="text-xs text-indigo-400 hover:text-indigo-300 font-medium hover:underline transition cursor-pointer"
+            >
+              Forgot password?
+            </button>
+          )}
         </div>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
@@ -99,7 +110,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-200 transition"
+            className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-200 transition cursor-pointer"
           >
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
@@ -133,7 +144,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             <button
               type="button"
               onClick={onSwitchToRegister}
-              className="text-indigo-400 hover:text-indigo-300 font-semibold hover:underline transition"
+              className="text-indigo-400 hover:text-indigo-300 font-semibold hover:underline transition cursor-pointer"
             >
               Create an account
             </button>

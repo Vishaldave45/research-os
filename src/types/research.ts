@@ -71,6 +71,7 @@ export interface ExperimentEntity extends BaseEntity {
   type: 'experiment';
   description?: string;
   status: 'planned' | 'running' | 'completed' | 'failed' | 'aborted';
+  parameters?: Record<string, any>;
   config?: Record<string, any>;
   executionMetadata?: Record<string, any>;
 }
@@ -134,6 +135,58 @@ export interface Workspace {
   updatedAt?: string;
 }
 
+export interface ProjectSummary {
+  questionsCount: number;
+  papersCount: number;
+  gapsCount: number;
+  hypothesesCount: number;
+  experimentsCount: number;
+  resultsCount: number;
+  decisionsCount: number;
+  claimsCount: number;
+}
+
+export interface Project {
+  id: string;
+  workspaceId: string;
+  name: string;
+  slug: string;
+  researchArea?: string;
+  description?: string;
+  status: 'active' | 'completed' | 'archived';
+  createdAt: string;
+  updatedAt?: string;
+  summary?: ProjectSummary;
+}
+
+export type WorkspaceViewMode =
+  | 'overview'
+  | 'projects'
+  | 'members'
+  | 'settings';
+
+export type ProjectViewMode =
+  | 'overview'
+  | 'questions'
+  | 'papers'
+  | 'gaps'
+  | 'hypotheses'
+  | 'experiments'
+  | 'results'
+  | 'decisions'
+  | 'claims'
+  | 'traceability';
+
+export type ViewMode =
+  | 'canvas'
+  | 'matrix'
+  | 'gaps'
+  | 'claims'
+  | 'evidence_narrative'
+  | 'table'
+  | WorkspaceViewMode
+  | ProjectViewMode;
+
 export interface LiteratureMatrixRow {
   paperId: string;
   paperCode: string;
@@ -189,5 +242,4 @@ export interface ClaimValidationAudit {
   recommendedActions: string[];
 }
 
-export type ViewMode = 'canvas' | 'matrix' | 'gaps' | 'claims' | 'evidence_narrative' | 'table';
 export type CanvasLayoutMode = 'pipeline' | 'grouped' | 'freeform';

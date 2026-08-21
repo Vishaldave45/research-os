@@ -4,11 +4,13 @@ import { Sparkles, Network, ShieldCheck, ArrowRight, BrainCircuit } from 'lucide
 
 interface LoginPageProps {
   onNavigateToRegister: () => void;
+  onNavigateToForgotPassword?: () => void;
   onSuccess?: () => void;
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({
   onNavigateToRegister,
+  onNavigateToForgotPassword,
   onSuccess,
 }) => {
   return (
@@ -113,6 +115,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             <LoginForm
               onSuccess={onSuccess}
               onSwitchToRegister={onNavigateToRegister}
+              onNavigateToForgotPassword={onNavigateToForgotPassword}
             />
           </div>
 

@@ -23,6 +23,7 @@ from app.api.v1.experiments_and_claims import (
 from app.api.v1.decisions import router as decisions_router
 from app.api.v1.graph import router as graph_router
 from app.api.v1.relationships import router as relationships_router
+from app.api.v1.projects import router as projects_router
 from app.api.v1.synthesis import router as synthesis_router
 from app.api.v1.seed import router as seed_router
 
@@ -102,6 +103,7 @@ def create_application() -> FastAPI:
     # Mount v1 routers
     application.include_router(auth_router, prefix=settings.API_V1_STR)
     application.include_router(workspaces_router, prefix=settings.API_V1_STR)
+    application.include_router(projects_router, prefix=settings.API_V1_STR)
     application.include_router(questions_router, prefix=settings.API_V1_STR)
     application.include_router(papers_router, prefix=settings.API_V1_STR)
     application.include_router(gaps_router, prefix=settings.API_V1_STR)
