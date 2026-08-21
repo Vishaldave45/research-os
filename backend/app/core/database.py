@@ -1,16 +1,16 @@
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.pool import NullPool
 from app.core.config import settings
 
-# SQLAlchemy 2.0 Async Engine
+# SQLAlchemy 2.0 Async Engine with NullPool for robust asyncpg event loop handling
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=False,
     future=True,
     pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
+    poolclass=NullPool,
 )
 
 # Async Session Factory

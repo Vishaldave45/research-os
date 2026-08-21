@@ -111,7 +111,7 @@ class GraphService:
                 code=e.code,
                 label=e.title,
                 status=e.status,
-                metadata=e.config_json,
+                metadata=e.config,
                 created_at=e.created_at,
             )
 
@@ -124,7 +124,7 @@ class GraphService:
                 code=r.code,
                 label=r.title,
                 status=r.status,
-                metadata=r.metrics_json,
+                metadata=r.metrics,
                 created_at=r.created_at,
             )
 

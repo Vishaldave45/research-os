@@ -18,21 +18,16 @@ import {
   DecisionEntity,
   ClaimEntity,
 } from '../types/research';
-import {
-  CANONICAL_WORKSPACE,
-  INITIAL_QUESTIONS,
-  INITIAL_PAPERS,
-  INITIAL_GAPS,
-  INITIAL_HYPOTHESES,
-  INITIAL_EXPERIMENTS,
-  INITIAL_RESULTS,
-  INITIAL_DECISIONS,
-  INITIAL_CLAIMS,
-  INITIAL_RELATIONSHIPS,
-} from '../data/canonicalWceData';
 import { entitiesApi } from '../services/api/entities.api';
 import { apiClient } from '../services/api/client';
 import { isRelationSemanticallyAllowed, wouldCreateCycle } from '../utils/relationshipRules';
+
+const DEFAULT_WORKSPACE: Workspace = {
+  id: '',
+  name: 'Research Workspace',
+  description: 'Connected PostgreSQL Research Workspace',
+  createdAt: new Date().toISOString(),
+};
 
 interface ResearchStoreState {
   workspace: Workspace;
@@ -155,7 +150,7 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
 
   return {
     // State initialized empty; populated strictly via FastAPI / PostgreSQL
-    workspace: CANONICAL_WORKSPACE,
+    workspace: DEFAULT_WORKSPACE,
     questions: [],
     papers: [],
     gaps: [],
@@ -584,17 +579,11 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
     resetToCanonicalDataset: async () => {
       set({ isSyncing: true, error: null });
       try {
-        set({
-          questions: INITIAL_QUESTIONS,
-          papers: INITIAL_PAPERS,
-          gaps: INITIAL_GAPS,
-          hypotheses: INITIAL_HYPOTHESES,
-          experiments: INITIAL_EXPERIMENTS,
-          results: INITIAL_RESULTS,
-          decisions: INITIAL_DECISIONS,
-          claims: INITIAL_CLAIMS,
-          relationships: INITIAL_RELATIONSHIPS,
-        });
+        await apiClient.post('/seed/wce', {});
+        await get().syncFromBackend();
+      } catch (err: any) {
+        const msg = err.message || 'Failed to seed canonical dataset into database.';
+        set({ error: msg });
       } finally {
         set({ isSyncing: false });
       }

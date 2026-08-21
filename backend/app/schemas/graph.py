@@ -56,6 +56,23 @@ class RelationshipRead(RelationshipBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+    @classmethod
+    def model_validate(cls, obj: Any, **kwargs) -> "RelationshipRead":
+        if hasattr(obj, "metadata_json") and not isinstance(obj, dict):
+            return cls(
+                id=getattr(obj, "id"),
+                workspace_id=getattr(obj, "workspace_id"),
+                source_type=getattr(obj, "source_type"),
+                source_id=getattr(obj, "source_id"),
+                target_type=getattr(obj, "target_type"),
+                target_id=getattr(obj, "target_id"),
+                relation_type=getattr(obj, "relation_type"),
+                metadata=getattr(obj, "metadata_json", {}) or {},
+                created_by=getattr(obj, "created_by"),
+                created_at=getattr(obj, "created_at"),
+            )
+        return super().model_validate(obj, **kwargs)
+
 
 class GraphNode(BaseModel):
     id: str  # UUID as string

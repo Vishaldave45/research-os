@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 
 class ClaimBase(BaseModel):
@@ -48,3 +48,21 @@ class ClaimRead(ClaimBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode="before")
+    @classmethod
+    def handle_orm_obj(cls, data: Any) -> Any:
+        if hasattr(data, "metadata_json"):
+            return {
+                "id": getattr(data, "id", None),
+                "workspace_id": getattr(data, "workspace_id", None),
+                "code": getattr(data, "code", ""),
+                "statement": getattr(data, "statement", ""),
+                "confidence_score": getattr(data, "confidence_score", 1.0),
+                "status": getattr(data, "status", "asserted"),
+                "metadata": getattr(data, "metadata_json", {}) or {},
+                "created_by": getattr(data, "created_by", None),
+                "created_at": getattr(data, "created_at", None),
+                "updated_at": getattr(data, "updated_at", None),
+            }
+        return data

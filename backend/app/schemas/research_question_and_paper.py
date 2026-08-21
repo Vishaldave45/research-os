@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 
 class ResearchQuestionBase(BaseModel):
@@ -32,6 +32,24 @@ class ResearchQuestionRead(ResearchQuestionBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode="before")
+    @classmethod
+    def handle_orm_obj(cls, data: Any) -> Any:
+        if hasattr(data, "metadata_json"):
+            return {
+                "id": getattr(data, "id", None),
+                "workspace_id": getattr(data, "workspace_id", None),
+                "code": getattr(data, "code", ""),
+                "title": getattr(data, "title", ""),
+                "description": getattr(data, "description", None),
+                "status": getattr(data, "status", "open"),
+                "metadata": getattr(data, "metadata_json", {}) or {},
+                "created_by": getattr(data, "created_by", None),
+                "created_at": getattr(data, "created_at", None),
+                "updated_at": getattr(data, "updated_at", None),
+            }
+        return data
 
 
 class PaperBase(BaseModel):
@@ -72,3 +90,26 @@ class PaperRead(PaperBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode="before")
+    @classmethod
+    def handle_orm_obj(cls, data: Any) -> Any:
+        if hasattr(data, "metadata_json"):
+            return {
+                "id": getattr(data, "id", None),
+                "workspace_id": getattr(data, "workspace_id", None),
+                "code": getattr(data, "code", ""),
+                "title": getattr(data, "title", ""),
+                "authors": getattr(data, "authors", []) or [],
+                "year": getattr(data, "year", None),
+                "venue": getattr(data, "venue", None),
+                "doi": getattr(data, "doi", None),
+                "url": getattr(data, "url", None),
+                "abstract": getattr(data, "abstract", None),
+                "notes": getattr(data, "notes", None),
+                "metadata": getattr(data, "metadata_json", {}) or {},
+                "created_by": getattr(data, "created_by", None),
+                "created_at": getattr(data, "created_at", None),
+                "updated_at": getattr(data, "updated_at", None),
+            }
+        return data

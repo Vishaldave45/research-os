@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 
 class GapBase(BaseModel):
@@ -36,13 +36,33 @@ class GapRead(GapBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+    @model_validator(mode="before")
+    @classmethod
+    def handle_orm_obj(cls, data: Any) -> Any:
+        if hasattr(data, "id") and not isinstance(data, dict):
+            return {
+                "id": getattr(data, "id", None),
+                "workspace_id": getattr(data, "workspace_id", None),
+                "code": getattr(data, "code", ""),
+                "title": getattr(data, "title", ""),
+                "description": getattr(data, "description", ""),
+                "impact_level": getattr(data, "impact_level", "high"),
+                "status": getattr(data, "status", "open"),
+                "metadata": getattr(data, "metadata_json", {}) or {},
+                "created_by": getattr(data, "created_by", None),
+                "created_at": getattr(data, "created_at", None),
+                "updated_at": getattr(data, "updated_at", None),
+            }
+        return data
+
 
 class HypothesisBase(BaseModel):
     code: Optional[str] = Field(None, max_length=32, description="Unique code e.g. H-001")
     statement: str = Field(..., min_length=10, description="Falsifiable hypothesis proposition")
-    rationale: Optional[str] = Field(None, description="Theoretical or empirical reasoning behind the hypothesis")
-    expected_outcome: Optional[str] = Field(None, description="Measurable predicted outcome")
+    rationale: Optional[str] = None
+    expected_outcome: Optional[str] = None
     status: str = Field("draft", pattern=r"^(draft|testing|supported|refuted|abandoned)$")
+    confidence_score: Optional[float] = Field(1.0, ge=0.0, le=1.0)
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
@@ -56,6 +76,7 @@ class HypothesisUpdate(BaseModel):
     rationale: Optional[str] = None
     expected_outcome: Optional[str] = None
     status: Optional[str] = Field(None, pattern=r"^(draft|testing|supported|refuted|abandoned)$")
+    confidence_score: Optional[float] = Field(None, ge=0.0, le=1.0)
     metadata: Optional[Dict[str, Any]] = None
 
 
@@ -68,3 +89,23 @@ class HypothesisRead(HypothesisBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode="before")
+    @classmethod
+    def handle_orm_obj(cls, data: Any) -> Any:
+        if hasattr(data, "id") and not isinstance(data, dict):
+            return {
+                "id": getattr(data, "id", None),
+                "workspace_id": getattr(data, "workspace_id", None),
+                "code": getattr(data, "code", ""),
+                "statement": getattr(data, "statement", ""),
+                "rationale": getattr(data, "rationale", None),
+                "expected_outcome": getattr(data, "expected_outcome", None),
+                "status": getattr(data, "status", "draft"),
+                "confidence_score": getattr(data, "confidence_score", 1.0),
+                "metadata": getattr(data, "metadata_json", {}) or {},
+                "created_by": getattr(data, "created_by", None),
+                "created_at": getattr(data, "created_at", None),
+                "updated_at": getattr(data, "updated_at", None),
+            }
+        return data

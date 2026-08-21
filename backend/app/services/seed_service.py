@@ -6,9 +6,6 @@ from app.models.paper import Paper
 from app.models.gap import Gap
 from app.models.hypothesis import Hypothesis
 from app.models.experiment import Experiment
-from app.models.result import Result
-from app.models.decision import Decision
-from app.models.claim import Claim
 from app.models.relationship import Relationship
 
 
@@ -18,9 +15,11 @@ class SeedService:
 
     async def seed_wce_dataset(self, workspace_id: uuid.UUID, user_id: uuid.UUID) -> Dict[str, Any]:
         """
-        Seeds the canonical Wireless Capsule Endoscopy (WCE) Deep Learning research project:
+        Seeds the canonical Wireless Capsule Endoscopy (WCE) Deep Learning research project plan:
         'Depth-Reduced Deep Learning Models via Structured Pruning, Knowledge Distillation,
         and Layer Folding for Wireless Capsule Endoscopy'.
+        Preserves research integrity: all unexecuted experiments are marked as 'planned'
+        with zero fabricated metric numbers.
         """
         # 1. Primary Research Question
         q1 = ResearchQuestion(
@@ -134,13 +133,13 @@ class SeedService:
         self.db.add_all([h1, h2])
         await self.db.flush()
 
-        # 5. Experiments (preserving honest execution status: planned, running, completed, failed)
+        # 5. Experiments (All strictly 'planned' with zero fabricated empirical numbers)
         e1 = Experiment(
             workspace_id=workspace_id,
             code="E-001",
             title="Baseline Evaluation of Uncompressed VGG16, ResNet50, and DenseNet121 on Kvasir-Capsule",
             description="Establish baseline accuracy, parameter counts, and inference times for full-depth backbone models on standardized Kvasir-Capsule splits.",
-            status="completed",
+            status="planned",
             config={
                 "models": ["VGG16", "ResNet50", "DenseNet121"],
                 "dataset": "Kvasir-Capsule",
@@ -150,9 +149,8 @@ class SeedService:
                 "learning_rate": 0.0001,
             },
             execution_metadata={
-                "hardware": "NVIDIA RTX 4090",
-                "framework": "PyTorch 2.3",
-                "status": "completed",
+                "status": "planned",
+                "hardware_target": "NVIDIA RTX 4090",
             },
             created_by=user_id,
         )
@@ -161,7 +159,7 @@ class SeedService:
             code="E-002",
             title="Progressive Layer Folding Architecture on ResNet50 Backbone",
             description="Execute layer folding transformation reducing 50-layer depth into folded 18-layer equivalent, measuring representation retention.",
-            status="running",
+            status="planned",
             config={
                 "base_model": "ResNet50",
                 "folding_strategy": "progressive_stage_merge",
@@ -169,26 +167,23 @@ class SeedService:
                 "dataset": "Kvasir-Capsule",
             },
             execution_metadata={
-                "current_epoch": 14,
-                "total_epochs": 100,
-                "status": "running",
+                "status": "planned",
             },
             created_by=user_id,
         )
         e3 = Experiment(
             workspace_id=workspace_id,
             code="E-003",
-            title="Aggressive 70% Structured Filter Pruning on VGG16 without Distillation",
+            title="Aggressive Structured Filter Pruning on VGG16",
             description="Evaluate direct structured pruning without recovery distillation to test lower capacity boundary.",
-            status="failed",
+            status="planned",
             config={
                 "base_model": "VGG16",
                 "pruning_ratio": 0.70,
                 "criterion": "L1_structured",
             },
             execution_metadata={
-                "failure_reason": "Severe gradient collapse and loss of discrimination on small mucosal ectasias below minimum clinical threshold.",
-                "status": "failed",
+                "status": "planned",
             },
             created_by=user_id,
         )
@@ -213,67 +208,7 @@ class SeedService:
         self.db.add_all([e1, e2, e3, e4])
         await self.db.flush()
 
-        # 6. Results (Empirical and Non-Fabricated)
-        r1 = Result(
-            workspace_id=workspace_id,
-            experiment_id=e1.id,
-            code="R-001",
-            title="Full-Depth Baseline Model Metrics Established on Kvasir-Capsule",
-            summary="Completed full-depth baseline benchmarks confirming dense parameter footprint and establishing reference points for depth-reduction targets.",
-            metrics={
-                "status": "completed",
-                "benchmark_completed": True,
-                "evaluated_models": ["VGG16", "ResNet50", "DenseNet121"],
-            },
-            artifacts=[],
-            status="valid",
-            created_by=user_id,
-        )
-        r2 = Result(
-            workspace_id=workspace_id,
-            experiment_id=e3.id,
-            code="R-002",
-            title="Aggressive Unsupervised 70% Pruning Degrades Subtle Lesion Recognition",
-            summary="Direct 70% structured filter pruning without knowledge distillation caused catastrophic degradation on vascular ectasia classes, confirming that distillation is necessary.",
-            metrics={
-                "status": "failed_hypothesis_tested",
-                "catastrophic_drop_observed": True,
-            },
-            artifacts=[],
-            status="valid",
-            created_by=user_id,
-        )
-        self.db.add_all([r1, r2])
-        await self.db.flush()
-
-        # 7. Decisions
-        d1 = Decision(
-            workspace_id=workspace_id,
-            code="D-001",
-            title="Prioritize Layer Folding and Knowledge Distillation over Standalone High-Ratio Pruning",
-            outcome="accepted",
-            rationale="Trial E-003 proved standalone filter pruning past 50% fails on subtle mucosal vascular lesions; architecture must incorporate layer folding and knowledge distillation to preserve feature depth.",
-            implications="All subsequent experiments will utilize teacher-student knowledge distillation protocols for compressed models.",
-            created_by=user_id,
-        )
-        self.db.add(d1)
-        await self.db.flush()
-
-        # 8. Claims
-        c1 = Claim(
-            workspace_id=workspace_id,
-            code="C-001",
-            title="Direct Filter Pruning Constraint in WCE",
-            statement="Standalone structured filter pruning without distillation is insufficient for preserving subtle gastrointestinal vascular pathology classification on Kvasir-Capsule.",
-            confidence_score=0.92,
-            status="verified",
-            metadata_json={"empirical_support": ["E-003", "R-002"]},
-            created_by=user_id,
-        )
-        self.db.add(c1)
-        await self.db.flush()
-
-        # 9. Relationships (Provenance Graph)
+        # 6. Directed Provenance Relationships
         rels = [
             Relationship(
                 workspace_id=workspace_id,
@@ -341,6 +276,15 @@ class SeedService:
             Relationship(
                 workspace_id=workspace_id,
                 source_type="experiment",
+                source_id=e2.id,
+                target_type="hypothesis",
+                target_id=h1.id,
+                relation_type="tests",
+                created_by=user_id,
+            ),
+            Relationship(
+                workspace_id=workspace_id,
+                source_type="experiment",
                 source_id=e3.id,
                 target_type="hypothesis",
                 target_id=h2.id,
@@ -349,29 +293,11 @@ class SeedService:
             ),
             Relationship(
                 workspace_id=workspace_id,
-                source_type="result",
-                source_id=r2.id,
+                source_type="experiment",
+                source_id=e4.id,
                 target_type="hypothesis",
                 target_id=h2.id,
-                relation_type="refutes",
-                created_by=user_id,
-            ),
-            Relationship(
-                workspace_id=workspace_id,
-                source_type="result",
-                source_id=r2.id,
-                target_type="decision",
-                target_id=d1.id,
-                relation_type="informs",
-                created_by=user_id,
-            ),
-            Relationship(
-                workspace_id=workspace_id,
-                source_type="result",
-                source_id=r2.id,
-                target_type="claim",
-                target_id=c1.id,
-                relation_type="supports",
+                relation_type="tests",
                 created_by=user_id,
             ),
         ]
@@ -380,6 +306,6 @@ class SeedService:
 
         return {
             "status": "success",
-            "message": "Canonical WCE Depth-Reduction research dataset seeded successfully.",
+            "message": "Canonical WCE Depth-Reduction research project plan seeded successfully with planned experiments.",
             "workspace_id": workspace_id,
         }

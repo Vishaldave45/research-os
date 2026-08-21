@@ -45,8 +45,8 @@ class ExperimentService:
             title=experiment_in.title.strip(),
             description=experiment_in.description.strip() if experiment_in.description else None,
             status=experiment_in.status,
-            config_json=experiment_in.config,
-            execution_metadata_json=experiment_in.execution_metadata,
+            config=experiment_in.config,
+            execution_metadata=experiment_in.execution_metadata,
             created_by=user_id,
         )
         created = await self.experiment_repo.create(experiment)
@@ -112,16 +112,30 @@ class ResultService:
 
         result_entity = Result(
             workspace_id=workspace_id,
-            experiment_id=result_in.experiment_id,
             code=code,
             title=result_in.title.strip(),
             summary=result_in.summary.strip(),
-            metrics_json=result_in.metrics,
-            artifacts_json=result_in.artifacts,
+            metrics=result_in.metrics,
+            artifacts=result_in.artifacts,
             status=result_in.status,
             created_by=user_id,
         )
         created = await self.result_repo.create(result_entity)
+
+        # Link to parent experiment if provided
+        if result_in.experiment_id:
+            exp = await self.experiment_repo.get_by_id(result_in.experiment_id, workspace_id)
+            if exp:
+                rel = Relationship(
+                    workspace_id=workspace_id,
+                    source_type="result",
+                    source_id=created.id,
+                    target_type="experiment",
+                    target_id=exp.id,
+                    relation_type="supports",
+                    created_by=user_id,
+                )
+                self.db.add(rel)
 
         # Link to hypotheses (result supports or refutes hypothesis)
         for h_id in result_in.linked_hypothesis_ids:

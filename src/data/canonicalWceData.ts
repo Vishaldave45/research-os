@@ -4,20 +4,8 @@ import {
   GapEntity,
   HypothesisEntity,
   ExperimentEntity,
-  ResultEntity,
-  DecisionEntity,
-  ClaimEntity,
   RelationshipLink,
-  Workspace,
 } from '../types/research';
-
-export const CANONICAL_WORKSPACE: Workspace = {
-  id: 'ws-wce-depth-reduction',
-  name: 'Depth-Reduced DL Models for WCE',
-  description:
-    'Depth-Reduced Deep Learning Models via Structured Pruning, Knowledge Distillation, and Layer Folding for Wireless Capsule Endoscopy (VGG16, ResNet50, DenseNet121 on Kvasir-Capsule).',
-  createdAt: '2026-01-15T08:00:00.000Z',
-};
 
 export const INITIAL_QUESTIONS: ResearchQuestionEntity[] = [
   {
@@ -156,7 +144,7 @@ export const INITIAL_EXPERIMENTS: ExperimentEntity[] = [
     title: 'Baseline Evaluation of Uncompressed VGG16, ResNet50, and DenseNet121 on Kvasir-Capsule',
     description:
       'Establish baseline accuracy, parameter counts, and inference times for full-depth backbone models on standardized Kvasir-Capsule splits.',
-    status: 'completed',
+    status: 'planned',
     config: {
       models: ['VGG16', 'ResNet50', 'DenseNet121'],
       dataset: 'Kvasir-Capsule',
@@ -164,8 +152,8 @@ export const INITIAL_EXPERIMENTS: ExperimentEntity[] = [
       batchSize: 32,
     },
     executionMetadata: {
-      hardware: 'NVIDIA RTX 4090',
-      framework: 'PyTorch 2.3',
+      hardwareTarget: 'NVIDIA RTX 4090',
+      status: 'planned',
     },
     createdAt: '2026-01-20T09:00:00.000Z',
   },
@@ -176,15 +164,14 @@ export const INITIAL_EXPERIMENTS: ExperimentEntity[] = [
     title: 'Progressive Layer Folding Architecture on ResNet50 Backbone',
     description:
       'Execute layer folding transformation reducing 50-layer depth into folded 18-layer equivalent, measuring representation retention.',
-    status: 'running',
+    status: 'planned',
     config: {
       baseModel: 'ResNet50',
       targetDepth: 18,
       dataset: 'Kvasir-Capsule',
     },
     executionMetadata: {
-      currentEpoch: 14,
-      totalEpochs: 100,
+      status: 'planned',
     },
     createdAt: '2026-01-21T10:30:00.000Z',
   },
@@ -192,16 +179,16 @@ export const INITIAL_EXPERIMENTS: ExperimentEntity[] = [
     id: 'e-003',
     code: 'E-003',
     type: 'experiment',
-    title: 'Aggressive 70% Structured Filter Pruning on VGG16 without Distillation',
+    title: 'Aggressive Structured Filter Pruning on VGG16',
     description:
       'Evaluate direct structured pruning without recovery distillation to test lower capacity boundary.',
-    status: 'failed',
+    status: 'planned',
     config: {
       baseModel: 'VGG16',
       pruningRatio: 0.70,
     },
     executionMetadata: {
-      failureReason: 'Severe gradient collapse and loss of discrimination on small mucosal ectasias below clinical threshold.',
+      status: 'planned',
     },
     createdAt: '2026-01-22T14:00:00.000Z',
   },
@@ -219,72 +206,9 @@ export const INITIAL_EXPERIMENTS: ExperimentEntity[] = [
     },
     executionMetadata: {
       queuePosition: 1,
+      status: 'planned',
     },
     createdAt: '2026-01-23T08:00:00.000Z',
-  },
-];
-
-export const INITIAL_RESULTS: ResultEntity[] = [
-  {
-    id: 'r-001',
-    code: 'R-001',
-    type: 'result',
-    experimentId: 'e-001',
-    title: 'Full-Depth Baseline Model Metrics Established on Kvasir-Capsule',
-    summary:
-      'Completed full-depth baseline benchmarks confirming dense parameter footprint and establishing reference points for depth-reduction targets.',
-    metrics: {
-      evaluatedModels: ['VGG16', 'ResNet50', 'DenseNet121'],
-      benchmarkCompleted: true,
-    },
-    artifacts: [],
-    status: 'valid',
-    createdAt: '2026-01-21T16:00:00.000Z',
-  },
-  {
-    id: 'r-002',
-    code: 'R-002',
-    type: 'result',
-    experimentId: 'e-003',
-    title: 'Aggressive Unsupervised 70% Pruning Degrades Subtle Lesion Recognition',
-    summary:
-      'Direct 70% structured filter pruning without knowledge distillation caused catastrophic degradation on vascular ectasia classes, confirming that distillation is necessary.',
-    metrics: {
-      catastrophicDropObserved: true,
-      hypothesisRefuted: true,
-    },
-    artifacts: [],
-    status: 'valid',
-    createdAt: '2026-01-22T17:00:00.000Z',
-  },
-];
-
-export const INITIAL_DECISIONS: DecisionEntity[] = [
-  {
-    id: 'd-001',
-    code: 'D-001',
-    type: 'decision',
-    title: 'Prioritize Layer Folding and Knowledge Distillation over Standalone High-Ratio Pruning',
-    outcome: 'accepted',
-    rationale:
-      'Trial E-003 proved standalone filter pruning past 50% fails on subtle mucosal vascular lesions; architecture must incorporate layer folding and knowledge distillation to preserve feature depth.',
-    implications:
-      'All subsequent experiments will utilize teacher-student knowledge distillation protocols for compressed models.',
-    createdAt: '2026-01-24T14:00:00.000Z',
-  },
-];
-
-export const INITIAL_CLAIMS: ClaimEntity[] = [
-  {
-    id: 'c-001',
-    code: 'C-001',
-    type: 'claim',
-    title: 'Direct Filter Pruning Constraint in WCE',
-    statement:
-      'Standalone structured filter pruning without distillation is insufficient for preserving subtle gastrointestinal vascular pathology classification on Kvasir-Capsule.',
-    confidenceScore: 0.92,
-    status: 'verified',
-    createdAt: '2026-01-25T10:00:00.000Z',
   },
 ];
 
@@ -355,6 +279,15 @@ export const INITIAL_RELATIONSHIPS: RelationshipLink[] = [
   {
     id: 'rel-08',
     sourceType: 'experiment',
+    sourceId: 'e-002',
+    targetType: 'hypothesis',
+    targetId: 'h-001',
+    relationType: 'tests',
+    createdAt: '2026-01-21T10:00:00.000Z',
+  },
+  {
+    id: 'rel-09',
+    sourceType: 'experiment',
     sourceId: 'e-003',
     targetType: 'hypothesis',
     targetId: 'h-002',
@@ -362,30 +295,12 @@ export const INITIAL_RELATIONSHIPS: RelationshipLink[] = [
     createdAt: '2026-01-21T11:00:00.000Z',
   },
   {
-    id: 'rel-09',
-    sourceType: 'result',
-    sourceId: 'r-002',
+    id: 'rel-10',
+    sourceType: 'experiment',
+    sourceId: 'e-004',
     targetType: 'hypothesis',
     targetId: 'h-002',
-    relationType: 'refutes',
-    createdAt: '2026-01-22T17:30:00.000Z',
-  },
-  {
-    id: 'rel-10',
-    sourceType: 'result',
-    sourceId: 'r-002',
-    targetType: 'decision',
-    targetId: 'd-001',
-    relationType: 'informs',
-    createdAt: '2026-01-24T14:15:00.000Z',
-  },
-  {
-    id: 'rel-11',
-    sourceType: 'result',
-    sourceId: 'r-002',
-    targetType: 'claim',
-    targetId: 'c-001',
-    relationType: 'supports',
-    createdAt: '2026-01-25T10:30:00.000Z',
+    relationType: 'tests',
+    createdAt: '2026-01-22T08:00:00.000Z',
   },
 ];

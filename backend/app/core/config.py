@@ -1,12 +1,16 @@
 import json
 from typing import List, Union, Any
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "ResearchOS"
     API_V1_STR: str = "/api/v1"
+    ENVIRONMENT: str = Field(
+        default="development",
+        description="Application runtime environment (development, test, staging, production)",
+    )
     
     # Database
     DATABASE_URL: str = Field(
@@ -45,6 +49,21 @@ class Settings(BaseSettings):
         elif isinstance(v, (list, set, tuple)):
             return [str(i) for i in v]
         return ["*"]
+
+    @model_validator(mode="after")
+    def validate_production_secrets(self) -> "Settings":
+        if self.ENVIRONMENT.lower() == "production":
+            insecure_keys = [
+                "dev_jwt_secret_key_change_in_production_32chars",
+                "secret",
+                "changeme",
+                "default",
+            ]
+            if any(insec in self.JWT_SECRET_KEY.lower() for insec in insecure_keys) or len(self.JWT_SECRET_KEY) < 32:
+                raise ValueError("JWT_SECRET_KEY must be a secure random string of at least 32 characters in production.")
+            if "researchos_secret_password" in self.DATABASE_URL:
+                raise ValueError("DATABASE_URL must not use default development credentials in production.")
+        return self
 
     model_config = SettingsConfigDict(
         env_file=".env",
