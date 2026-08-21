@@ -10,6 +10,7 @@ from app.models.hypothesis import Hypothesis
 from app.models.experiment import Experiment
 from app.models.result import Result
 from app.models.decision import Decision
+from app.models.claim import Claim
 from app.models.relationship import Relationship
 
 __all__ = [
@@ -26,5 +27,6 @@ __all__ = [
     "Experiment",
     "Result",
     "Decision",
+    "Claim",
     "Relationship",
 ]

@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User
 from app.models.refresh_token import RefreshToken
-from app.schemas.user import UserCreate, UserLogin, TokenResponse, UserRead
+from app.schemas.auth import UserCreate, UserLogin, TokenResponse, UserRead
 from app.repositories.user_repository import UserRepository
 from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.core.security import (
@@ -24,17 +24,19 @@ class AuthService:
         self.token_repo = RefreshTokenRepository(db)
 
     async def register(self, user_in: UserCreate) -> tuple[UserRead, TokenResponse]:
+        normalized_email = user_in.email.lower().strip()
+        
         # Check if email is already registered
-        existing_user = await self.user_repo.get_by_email(user_in.email)
+        existing_user = await self.user_repo.get_by_email(normalized_email)
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="A user with this email address already exists.",
             )
 
-        # Create user entity
+        # Create user entity with securely hashed password
         user = User(
-            email=user_in.email.lower().strip(),
+            email=normalized_email,
             hashed_password=get_password_hash(user_in.password),
             full_name=user_in.full_name.strip(),
             role="researcher",
@@ -47,7 +49,9 @@ class AuthService:
         return UserRead.model_validate(created_user), tokens
 
     async def login(self, login_in: UserLogin) -> tuple[UserRead, TokenResponse]:
-        user = await self.user_repo.get_by_email(login_in.email)
+        normalized_email = login_in.email.lower().strip()
+        user = await self.user_repo.get_by_email(normalized_email)
+        
         if not user or not verify_password(login_in.password, user.hashed_password):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

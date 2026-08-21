@@ -16,6 +16,11 @@ class RefreshTokenRepository:
         await self.db.refresh(refresh_token)
         return refresh_token
 
+    async def get_by_hash(self, token_hash: str) -> Optional[RefreshToken]:
+        stmt = select(RefreshToken).where(RefreshToken.token_hash == token_hash)
+        result = await self.db.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def get_valid_token(self, token_hash: str) -> Optional[RefreshToken]:
         now = datetime.now(timezone.utc)
         stmt = select(RefreshToken).where(

@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 from typing import List
 
@@ -10,13 +10,13 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = Field(
         default="postgresql+asyncpg://researchos:researchos_secret_password@localhost:5432/researchos_db",
-        description="Async PostgreSQL connection URL"
+        description="Async PostgreSQL connection URL",
     )
     
     # JWT Authentication & Security
     JWT_SECRET_KEY: str = Field(
         default="dev_jwt_secret_key_change_in_production_32chars",
-        description="Secret key for signing JWTs"
+        description="Secret key for signing JWTs",
     )
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
@@ -30,9 +30,11 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5173",
     ]
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+        extra="allow",
+    )
 
 
 settings = Settings()

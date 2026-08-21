@@ -1,0 +1,198 @@
+import React, { useState } from 'react';
+import { useAuthStore } from '../store/authStore';
+import { Mail, Lock, User as UserIcon, UserPlus, AlertCircle, Loader2, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+
+interface RegisterFormProps {
+  onSuccess?: () => void;
+  onSwitchToLogin?: () => void;
+}
+
+export const RegisterForm: React.FC<RegisterFormProps> = ({
+  onSuccess,
+  onSwitchToLogin,
+}) => {
+  const { register, isLoading, error, clearError } = useAuthStore();
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  const passwordLengthValid = password.length >= 8;
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    clearError();
+    setValidationError(null);
+
+    const trimmedName = fullName.trim();
+    const trimmedEmail = email.trim();
+
+    if (!trimmedName) {
+      setValidationError('Full name is required.');
+      return;
+    }
+    if (!trimmedEmail) {
+      setValidationError('Email address is required.');
+      return;
+    }
+    if (password.length < 8) {
+      setValidationError('Password must contain at least 8 characters.');
+      return;
+    }
+
+    try {
+      await register({
+        full_name: trimmedName,
+        email: trimmedEmail,
+        password,
+      });
+      onSuccess?.();
+    } catch {
+      // Error handled in store
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4 text-left">
+      {(error || validationError) && (
+        <div className="flex items-start gap-2.5 rounded-lg border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-300 backdrop-blur-sm animate-in fade-in duration-200">
+          <AlertCircle className="h-4 w-4 shrink-0 text-rose-400 mt-0.5" />
+          <p className="flex-1 leading-relaxed">{error || validationError}</p>
+        </div>
+      )}
+
+      {/* Full Name Input */}
+      <div>
+        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+          Full Name / Title
+        </label>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+            <UserIcon className="h-4 w-4" />
+          </div>
+          <input
+            type="text"
+            required
+            autoComplete="name"
+            value={fullName}
+            onChange={(e) => {
+              setFullName(e.target.value);
+              if (validationError) setValidationError(null);
+            }}
+            placeholder="Dr. Marie Curie"
+            className="w-full rounded-lg border border-slate-700 bg-slate-800/80 py-2.5 pl-10 pr-4 text-sm text-slate-100 placeholder-slate-500 shadow-inner outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+          />
+        </div>
+      </div>
+
+      {/* Email Input */}
+      <div>
+        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+          Institutional Email
+        </label>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+            <Mail className="h-4 w-4" />
+          </div>
+          <input
+            type="email"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (validationError) setValidationError(null);
+            }}
+            placeholder="curie@radium.org"
+            className="w-full rounded-lg border border-slate-700 bg-slate-800/80 py-2.5 pl-10 pr-4 text-sm text-slate-100 placeholder-slate-500 shadow-inner outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+          />
+        </div>
+      </div>
+
+      {/* Password Input */}
+      <div>
+        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+          Master Password
+        </label>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+            <Lock className="h-4 w-4" />
+          </div>
+          <input
+            type={showPassword ? 'text' : 'password'}
+            required
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (validationError) setValidationError(null);
+            }}
+            placeholder="••••••••••••"
+            className="w-full rounded-lg border border-slate-700 bg-slate-800/80 py-2.5 pl-10 pr-10 text-sm text-slate-100 placeholder-slate-500 shadow-inner outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-200 transition"
+          >
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+
+        {/* Password Strength Checklist */}
+        <div className="mt-2 grid grid-cols-3 gap-1.5 text-[11px]">
+          <div className={`flex items-center gap-1 ${passwordLengthValid ? 'text-emerald-400' : 'text-slate-500'}`}>
+            <CheckCircle2 className="h-3 w-3" />
+            <span>8+ chars</span>
+          </div>
+          <div className={`flex items-center gap-1 ${hasUppercase ? 'text-emerald-400' : 'text-slate-500'}`}>
+            <CheckCircle2 className="h-3 w-3" />
+            <span>Uppercase</span>
+          </div>
+          <div className={`flex items-center gap-1 ${hasNumber ? 'text-emerald-400' : 'text-slate-500'}`}>
+            <CheckCircle2 className="h-3 w-3" />
+            <span>Number</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Submit Button */}
+      <button
+        type="submit"
+        disabled={isLoading}
+        className="w-full mt-2 flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-indigo-500 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:from-indigo-400 hover:to-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Creating Research Account...</span>
+          </>
+        ) : (
+          <>
+            <UserPlus className="h-4 w-4" />
+            <span>Register & Launch Lab</span>
+          </>
+        )}
+      </button>
+
+      {/* Switch to Login */}
+      {onSwitchToLogin && (
+        <div className="text-center pt-2">
+          <p className="text-xs text-slate-400">
+            Already have an active workspace?{' '}
+            <button
+              type="button"
+              onClick={onSwitchToLogin}
+              className="text-indigo-400 hover:text-indigo-300 font-semibold hover:underline transition"
+            >
+              Log in here
+            </button>
+          </p>
+        </div>
+      )}
+    </form>
+  );
+};
