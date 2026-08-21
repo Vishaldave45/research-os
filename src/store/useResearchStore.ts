@@ -31,6 +31,7 @@ import {
   INITIAL_RELATIONSHIPS,
 } from '../data/canonicalWceData';
 import { entitiesApi } from '../services/api/entities.api';
+import { apiClient } from '../services/api/client';
 import { isRelationSemanticallyAllowed, wouldCreateCycle } from '../utils/relationshipRules';
 
 interface ResearchStoreState {
@@ -202,6 +203,14 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
     setError: (error) => set({ error }),
 
     syncFromBackend: async () => {
+      const token = apiClient.getAccessToken();
+      if (!token) {
+        set({
+          isAuthModalOpen: true,
+          error: 'Please sign in or register to connect to your persistent research workspace.',
+        });
+        return;
+      }
       set({ isSyncing: true, error: null });
       try {
         const [
@@ -241,7 +250,14 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
       } catch (err: any) {
         const msg = err.message || 'Unable to sync research entities from backend. Please verify your connection or retry.';
         console.warn('Backend sync error:', err);
-        set({ error: msg });
+        if (err.status === 401) {
+          set({
+            isAuthModalOpen: true,
+            error: 'Authentication session expired or missing. Please sign in again.',
+          });
+        } else {
+          set({ error: msg });
+        }
       } finally {
         set({ isSyncing: false });
       }

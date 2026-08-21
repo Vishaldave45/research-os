@@ -11,16 +11,162 @@ import {
   RelationshipLink,
 } from '../../types/research';
 
+function mapQuestion(q: any): ResearchQuestionEntity {
+  return {
+    id: q.id,
+    code: q.code,
+    type: 'question',
+    title: q.title,
+    description: q.description,
+    status: q.status || 'open',
+    priority: q.priority || 'medium',
+    createdAt: q.created_at || q.createdAt || new Date().toISOString(),
+    updatedAt: q.updated_at || q.updatedAt,
+    metadata: q.metadata || {},
+  };
+}
+
+function mapPaper(p: any): PaperEntity {
+  return {
+    id: p.id,
+    code: p.code,
+    type: 'paper',
+    title: p.title,
+    authors: Array.isArray(p.authors) ? p.authors : (typeof p.authors === 'string' ? p.authors.split(',').map((s: string) => s.trim()) : []),
+    year: p.year,
+    venue: p.venue,
+    doi: p.doi,
+    url: p.url,
+    abstract: p.abstract,
+    notes: p.notes,
+    citationCount: p.citation_count || p.citationCount,
+    createdAt: p.created_at || p.createdAt || new Date().toISOString(),
+    updatedAt: p.updated_at || p.updatedAt,
+    metadata: p.metadata || {},
+  };
+}
+
+function mapGap(g: any): GapEntity {
+  return {
+    id: g.id,
+    code: g.code,
+    type: 'gap',
+    title: g.title,
+    description: g.description,
+    impactLevel: g.impact_level || g.impactLevel || 'high',
+    status: g.status || 'open',
+    createdAt: g.created_at || g.createdAt || new Date().toISOString(),
+    updatedAt: g.updated_at || g.updatedAt,
+    metadata: g.metadata || {},
+  };
+}
+
+function mapHypothesis(h: any): HypothesisEntity {
+  return {
+    id: h.id,
+    code: h.code,
+    type: 'hypothesis',
+    title: h.title || h.statement || '',
+    statement: h.statement || h.title || '',
+    rationale: h.rationale || '',
+    expectedOutcome: h.expected_outcome || h.expectedOutcome,
+    status: h.status || 'draft',
+    confidence: h.confidence ?? 0.85,
+    createdAt: h.created_at || h.createdAt || new Date().toISOString(),
+    updatedAt: h.updated_at || h.updatedAt,
+    metadata: h.metadata || {},
+  };
+}
+
+function mapExperiment(e: any): ExperimentEntity {
+  return {
+    id: e.id,
+    code: e.code,
+    type: 'experiment',
+    title: e.title,
+    description: e.description,
+    status: e.status || 'planned',
+    config: e.config || {},
+    executionMetadata: e.execution_metadata || e.executionMetadata || {},
+    createdAt: e.created_at || e.createdAt || new Date().toISOString(),
+    updatedAt: e.updated_at || e.updatedAt,
+    metadata: e.metadata || {},
+  };
+}
+
+function mapResult(r: any): ResultEntity {
+  return {
+    id: r.id,
+    code: r.code,
+    type: 'result',
+    title: r.title,
+    experimentId: r.experiment_id || r.experimentId,
+    summary: r.summary || '',
+    metrics: r.metrics || {},
+    artifacts: r.artifacts || [],
+    status: r.status || 'valid',
+    createdAt: r.created_at || r.createdAt || new Date().toISOString(),
+    updatedAt: r.updated_at || r.updatedAt,
+    metadata: r.metadata || {},
+  };
+}
+
+function mapDecision(d: any): DecisionEntity {
+  return {
+    id: d.id,
+    code: d.code,
+    type: 'decision',
+    title: d.title,
+    outcome: d.outcome || 'accepted',
+    rationale: d.rationale || '',
+    implications: d.implications,
+    createdAt: d.created_at || d.createdAt || new Date().toISOString(),
+    updatedAt: d.updated_at || d.updatedAt,
+    metadata: d.metadata || {},
+  };
+}
+
+function mapClaim(c: any): ClaimEntity {
+  return {
+    id: c.id,
+    code: c.code,
+    type: 'claim',
+    title: c.title || c.statement || '',
+    statement: c.statement || c.title || '',
+    confidenceScore: c.confidence_score !== undefined ? c.confidence_score : (c.confidenceScore !== undefined ? c.confidenceScore : 0.9),
+    status: c.status || 'verified',
+    createdAt: c.created_at || c.createdAt || new Date().toISOString(),
+    updatedAt: c.updated_at || c.updatedAt,
+    metadata: c.metadata || {},
+  };
+}
+
 export const entitiesApi = {
   // Questions
   async listQuestions(): Promise<ResearchQuestionEntity[]> {
-    return apiClient.get('/questions');
+    const data = await apiClient.get<any[]>('/questions');
+    return data.map(mapQuestion);
   },
   async createQuestion(data: Partial<ResearchQuestionEntity>): Promise<ResearchQuestionEntity> {
-    return apiClient.post('/questions', data);
+    const payload = {
+      code: data.code,
+      title: data.title,
+      description: data.description,
+      status: data.status,
+      metadata: data.metadata,
+    };
+    const res = await apiClient.post('/questions', payload);
+    return mapQuestion(res);
   },
   async updateQuestion(id: string, data: Partial<ResearchQuestionEntity>): Promise<ResearchQuestionEntity> {
-    return apiClient.put(`/questions/${id}`, data);
+    const payload = {
+      title: data.title,
+      description: data.description,
+      status: data.status,
+      metadata: data.metadata,
+    };
+    const res = await apiClient.put(`/questions/${id}`, payload);
+    return mapQuestion(res);
   },
   async deleteQuestion(id: string): Promise<void> {
     return apiClient.delete(`/questions/${id}`);
@@ -28,13 +174,39 @@ export const entitiesApi = {
 
   // Papers
   async listPapers(): Promise<PaperEntity[]> {
-    return apiClient.get('/papers');
+    const data = await apiClient.get<any[]>('/papers');
+    return data.map(mapPaper);
   },
   async createPaper(data: Partial<PaperEntity>): Promise<PaperEntity> {
-    return apiClient.post('/papers', data);
+    const payload = {
+      code: data.code,
+      title: data.title,
+      authors: data.authors,
+      year: data.year,
+      venue: data.venue,
+      doi: data.doi,
+      url: data.url,
+      abstract: data.abstract,
+      notes: data.notes,
+      metadata: data.metadata,
+    };
+    const res = await apiClient.post('/papers', payload);
+    return mapPaper(res);
   },
   async updatePaper(id: string, data: Partial<PaperEntity>): Promise<PaperEntity> {
-    return apiClient.put(`/papers/${id}`, data);
+    const payload = {
+      title: data.title,
+      authors: data.authors,
+      year: data.year,
+      venue: data.venue,
+      doi: data.doi,
+      url: data.url,
+      abstract: data.abstract,
+      notes: data.notes,
+      metadata: data.metadata,
+    };
+    const res = await apiClient.put(`/papers/${id}`, payload);
+    return mapPaper(res);
   },
   async deletePaper(id: string): Promise<void> {
     return apiClient.delete(`/papers/${id}`);
@@ -42,13 +214,31 @@ export const entitiesApi = {
 
   // Gaps
   async listGaps(): Promise<GapEntity[]> {
-    return apiClient.get('/gaps');
+    const data = await apiClient.get<any[]>('/gaps');
+    return data.map(mapGap);
   },
   async createGap(data: Partial<GapEntity>): Promise<GapEntity> {
-    return apiClient.post('/gaps', data);
+    const payload = {
+      code: data.code,
+      title: data.title,
+      description: data.description,
+      impact_level: data.impactLevel,
+      status: data.status,
+      metadata: data.metadata,
+    };
+    const res = await apiClient.post('/gaps', payload);
+    return mapGap(res);
   },
   async updateGap(id: string, data: Partial<GapEntity>): Promise<GapEntity> {
-    return apiClient.put(`/gaps/${id}`, data);
+    const payload = {
+      title: data.title,
+      description: data.description,
+      impact_level: data.impactLevel,
+      status: data.status,
+      metadata: data.metadata,
+    };
+    const res = await apiClient.put(`/gaps/${id}`, payload);
+    return mapGap(res);
   },
   async deleteGap(id: string): Promise<void> {
     return apiClient.delete(`/gaps/${id}`);
@@ -56,13 +246,32 @@ export const entitiesApi = {
 
   // Hypotheses
   async listHypotheses(): Promise<HypothesisEntity[]> {
-    return apiClient.get('/hypotheses');
+    const data = await apiClient.get<any[]>('/hypotheses');
+    return data.map(mapHypothesis);
   },
   async createHypothesis(data: Partial<HypothesisEntity>): Promise<HypothesisEntity> {
-    return apiClient.post('/hypotheses', data);
+    const payload = {
+      code: data.code,
+      statement: data.statement || data.title,
+      rationale: data.rationale,
+      expected_outcome: data.expectedOutcome,
+      status: data.status,
+      confidence: data.confidence,
+      metadata: data.metadata,
+    };
+    const res = await apiClient.post('/hypotheses', payload);
+    return mapHypothesis(res);
   },
   async updateHypothesis(id: string, data: Partial<HypothesisEntity>): Promise<HypothesisEntity> {
-    return apiClient.put(`/hypotheses/${id}`, data);
+    const payload = {
+      statement: data.statement || data.title,
+      rationale: data.rationale,
+      expected_outcome: data.expectedOutcome,
+      status: data.status,
+      metadata: data.metadata,
+    };
+    const res = await apiClient.put(`/hypotheses/${id}`, payload);
+    return mapHypothesis(res);
   },
   async deleteHypothesis(id: string): Promise<void> {
     return apiClient.delete(`/hypotheses/${id}`);
@@ -70,13 +279,33 @@ export const entitiesApi = {
 
   // Experiments
   async listExperiments(): Promise<ExperimentEntity[]> {
-    return apiClient.get('/experiments');
+    const data = await apiClient.get<any[]>('/experiments');
+    return data.map(mapExperiment);
   },
   async createExperiment(data: Partial<ExperimentEntity>): Promise<ExperimentEntity> {
-    return apiClient.post('/experiments', data);
+    const payload = {
+      code: data.code,
+      title: data.title,
+      description: data.description,
+      status: data.status,
+      config: data.config,
+      execution_metadata: data.executionMetadata,
+      metadata: data.metadata,
+    };
+    const res = await apiClient.post('/experiments', payload);
+    return mapExperiment(res);
   },
   async updateExperiment(id: string, data: Partial<ExperimentEntity>): Promise<ExperimentEntity> {
-    return apiClient.put(`/experiments/${id}`, data);
+    const payload = {
+      title: data.title,
+      description: data.description,
+      status: data.status,
+      config: data.config,
+      execution_metadata: data.executionMetadata,
+      metadata: data.metadata,
+    };
+    const res = await apiClient.put(`/experiments/${id}`, payload);
+    return mapExperiment(res);
   },
   async deleteExperiment(id: string): Promise<void> {
     return apiClient.delete(`/experiments/${id}`);
@@ -84,13 +313,34 @@ export const entitiesApi = {
 
   // Results
   async listResults(): Promise<ResultEntity[]> {
-    return apiClient.get('/results');
+    const data = await apiClient.get<any[]>('/results');
+    return data.map(mapResult);
   },
   async createResult(data: Partial<ResultEntity>): Promise<ResultEntity> {
-    return apiClient.post('/results', data);
+    const payload = {
+      code: data.code,
+      title: data.title,
+      experiment_id: data.experimentId,
+      summary: data.summary,
+      metrics: data.metrics,
+      artifacts: data.artifacts,
+      status: data.status,
+      metadata: data.metadata,
+    };
+    const res = await apiClient.post('/results', payload);
+    return mapResult(res);
   },
   async updateResult(id: string, data: Partial<ResultEntity>): Promise<ResultEntity> {
-    return apiClient.put(`/results/${id}`, data);
+    const payload = {
+      title: data.title,
+      summary: data.summary,
+      metrics: data.metrics,
+      artifacts: data.artifacts,
+      status: data.status,
+      metadata: data.metadata,
+    };
+    const res = await apiClient.put(`/results/${id}`, payload);
+    return mapResult(res);
   },
   async deleteResult(id: string): Promise<void> {
     return apiClient.delete(`/results/${id}`);
@@ -98,13 +348,31 @@ export const entitiesApi = {
 
   // Decisions
   async listDecisions(): Promise<DecisionEntity[]> {
-    return apiClient.get('/decisions');
+    const data = await apiClient.get<any[]>('/decisions');
+    return data.map(mapDecision);
   },
   async createDecision(data: Partial<DecisionEntity>): Promise<DecisionEntity> {
-    return apiClient.post('/decisions', data);
+    const payload = {
+      code: data.code,
+      title: data.title,
+      outcome: data.outcome,
+      rationale: data.rationale,
+      implications: data.implications,
+      metadata: data.metadata,
+    };
+    const res = await apiClient.post('/decisions', payload);
+    return mapDecision(res);
   },
   async updateDecision(id: string, data: Partial<DecisionEntity>): Promise<DecisionEntity> {
-    return apiClient.put(`/decisions/${id}`, data);
+    const payload = {
+      title: data.title,
+      outcome: data.outcome,
+      rationale: data.rationale,
+      implications: data.implications,
+      metadata: data.metadata,
+    };
+    const res = await apiClient.put(`/decisions/${id}`, payload);
+    return mapDecision(res);
   },
   async deleteDecision(id: string): Promise<void> {
     return apiClient.delete(`/decisions/${id}`);
@@ -112,13 +380,30 @@ export const entitiesApi = {
 
   // Claims
   async listClaims(): Promise<ClaimEntity[]> {
-    return apiClient.get('/claims');
+    const data = await apiClient.get<any[]>('/claims');
+    return data.map(mapClaim);
   },
   async createClaim(data: Partial<ClaimEntity>): Promise<ClaimEntity> {
-    return apiClient.post('/claims', data);
+    const payload = {
+      code: data.code,
+      title: data.title || data.statement,
+      statement: data.statement || data.title,
+      confidence_score: data.confidenceScore,
+      status: data.status,
+      metadata: data.metadata,
+    };
+    const res = await apiClient.post('/claims', payload);
+    return mapClaim(res);
   },
   async updateClaim(id: string, data: Partial<ClaimEntity>): Promise<ClaimEntity> {
-    return apiClient.put(`/claims/${id}`, data);
+    const payload = {
+      statement: data.statement || data.title,
+      confidence_score: data.confidenceScore,
+      status: data.status,
+      metadata: data.metadata,
+    };
+    const res = await apiClient.put(`/claims/${id}`, payload);
+    return mapClaim(res);
   },
   async deleteClaim(id: string): Promise<void> {
     return apiClient.delete(`/claims/${id}`);
@@ -136,7 +421,7 @@ export const entitiesApi = {
       relationType: r.relation_type,
       confidence: r.confidence,
       notes: r.notes,
-      createdAt: r.created_at,
+      createdAt: r.created_at || r.createdAt || new Date().toISOString(),
     }));
   },
   async createRelationship(data: {
@@ -166,10 +451,11 @@ export const entitiesApi = {
       relationType: res.relation_type,
       confidence: res.confidence,
       notes: res.notes,
-      createdAt: res.created_at,
+      createdAt: res.created_at || res.createdAt || new Date().toISOString(),
     };
   },
   async deleteRelationship(id: string): Promise<void> {
     return apiClient.delete(`/relationships/${id}`);
   },
 };
+
