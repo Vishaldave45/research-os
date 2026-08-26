@@ -62,10 +62,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await authApi.login(credentials);
-      apiClient.setTokens(response.tokens.access_token, response.tokens.refresh_token);
+      const accessToken = response.tokens?.access_token || (response as any).access_token;
+      const refreshToken = response.tokens?.refresh_token || (response as any).refresh_token;
+      const user = response.user || (response as any);
+      const tokens = response.tokens || { access_token: accessToken, refresh_token: refreshToken, token_type: 'bearer', expires_in: 900 };
+
+      if (accessToken) {
+        apiClient.setTokens(accessToken, refreshToken);
+      }
+
       set({
-        user: response.user,
-        tokens: response.tokens,
+        user,
+        tokens,
         isAuthenticated: true,
         isLoading: false,
         error: null,
@@ -83,10 +91,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await authApi.register(credentials);
-      apiClient.setTokens(response.tokens.access_token, response.tokens.refresh_token);
+      const accessToken = response.tokens?.access_token || (response as any).access_token;
+      const refreshToken = response.tokens?.refresh_token || (response as any).refresh_token;
+      const user = response.user || (response as any);
+      const tokens = response.tokens || { access_token: accessToken, refresh_token: refreshToken, token_type: 'bearer', expires_in: 900 };
+
+      if (accessToken) {
+        apiClient.setTokens(accessToken, refreshToken);
+      }
+
       set({
-        user: response.user,
-        tokens: response.tokens,
+        user,
+        tokens,
         isAuthenticated: true,
         isLoading: false,
         error: null,

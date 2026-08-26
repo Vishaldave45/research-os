@@ -42,7 +42,15 @@ def create_application() -> FastAPI:
         allow_origins=settings.CORS_ORIGINS,
         allow_credentials=True,
         allow_methods=["*"],
-        allow_headers=["*"],
+        allow_headers=[
+            "Authorization",
+            "X-Workspace-Id",
+            "Content-Type",
+            "Accept",
+            "Origin",
+            "X-Requested-With",
+            "*",
+        ],
     )
 
     # Standardized Global Error Handlers (P0-15)

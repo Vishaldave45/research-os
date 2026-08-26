@@ -26,11 +26,17 @@ class ApiClient {
   }
 
   public setTokens(accessToken: string, refreshToken: string) {
+    if (!accessToken || accessToken === 'undefined' || accessToken === 'null') {
+      this.clearTokens();
+      return;
+    }
     this.accessToken = accessToken;
     this.refreshToken = refreshToken;
     try {
       localStorage.setItem('researchos_access_token', accessToken);
-      localStorage.setItem('researchos_refresh_token', refreshToken);
+      if (refreshToken && refreshToken !== 'undefined' && refreshToken !== 'null') {
+        localStorage.setItem('researchos_refresh_token', refreshToken);
+      }
     } catch {}
   }
 
@@ -44,6 +50,7 @@ class ApiClient {
   }
 
   public setActiveWorkspace(workspaceId: string) {
+    if (!workspaceId) return;
     this.activeWorkspaceId = workspaceId;
     try {
       localStorage.setItem('researchos_workspace_id', workspaceId);
@@ -51,23 +58,48 @@ class ApiClient {
   }
 
   public getActiveWorkspaceId(): string | null {
-    return this.activeWorkspaceId;
+    if (this.activeWorkspaceId && this.activeWorkspaceId !== 'undefined') return this.activeWorkspaceId;
+    try {
+      const wsId = localStorage.getItem('researchos_workspace_id');
+      if (wsId && wsId !== 'undefined') {
+        this.activeWorkspaceId = wsId;
+        return wsId;
+      }
+    } catch {}
+    return null;
   }
 
   public getAccessToken(): string | null {
-    return this.accessToken;
+    if (this.accessToken && this.accessToken !== 'undefined' && this.accessToken !== 'null') {
+      return this.accessToken;
+    }
+    try {
+      const token = localStorage.getItem('researchos_access_token');
+      if (token && token !== 'undefined' && token !== 'null') {
+        this.accessToken = token;
+        return token;
+      }
+    } catch {}
+    return null;
   }
 
   private async refreshAccessToken(): Promise<boolean> {
-    if (!this.refreshToken) return false;
+    const currentRefresh = this.refreshToken || (() => {
+      try {
+        return localStorage.getItem('researchos_refresh_token');
+      } catch {
+        return null;
+      }
+    })();
+
+    if (!currentRefresh) return false;
 
     try {
       const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          refreshToken: this.refreshToken,
-          refresh_token: this.refreshToken,
+          refresh_token: currentRefresh,
         }),
       });
 
@@ -77,11 +109,8 @@ class ApiClient {
       }
 
       const data = await res.json();
-      if (data.tokens?.accessToken) {
-        this.setTokens(data.tokens.accessToken, data.tokens.refreshToken || this.refreshToken);
-        return true;
-      } else if (data.access_token) {
-        this.setTokens(data.access_token, data.refresh_token || this.refreshToken);
+      if (data.access_token) {
+        this.setTokens(data.access_token, data.refresh_token || currentRefresh);
         return true;
       }
     } catch {
@@ -100,12 +129,14 @@ class ApiClient {
       ...(options.headers as Record<string, string>),
     };
 
-    if (this.accessToken) {
-      headers['Authorization'] = `Bearer ${this.accessToken}`;
+    const accessToken = this.getAccessToken();
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
     }
 
-    if (this.activeWorkspaceId) {
-      headers['X-Workspace-Id'] = this.activeWorkspaceId;
+    const workspaceId = this.getActiveWorkspaceId();
+    if (workspaceId) {
+      headers['X-Workspace-Id'] = workspaceId;
     }
 
     const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
@@ -116,7 +147,11 @@ class ApiClient {
         headers,
       });
 
-      if (response.status === 401 && !isRetry && this.refreshToken) {
+      const hasRefresh = !!(this.refreshToken || (() => {
+        try { return localStorage.getItem('researchos_refresh_token'); } catch { return null; }
+      })());
+
+      if (response.status === 401 && !isRetry && hasRefresh) {
         const refreshed = await this.refreshAccessToken();
         if (refreshed) {
           return this.request<T>(endpoint, options, true);
@@ -130,8 +165,25 @@ class ApiClient {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
+        let errorMsg = `Request failed with status ${response.status}`;
+        if (data.error) {
+          if (typeof data.error === 'string') {
+            errorMsg = data.error;
+          } else if (typeof data.error === 'object' && data.error !== null) {
+            errorMsg = (data.error as any).message || JSON.stringify(data.error);
+          }
+        } else if (data.detail) {
+          if (typeof data.detail === 'string') {
+            errorMsg = data.detail;
+          } else if (Array.isArray(data.detail)) {
+            errorMsg = data.detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ');
+          } else if (typeof data.detail === 'object') {
+            errorMsg = (data.detail as any).message || JSON.stringify(data.detail);
+          }
+        }
+
         throw {
-          message: data.error || data.detail || `Request failed with status ${response.status}`,
+          message: errorMsg,
           status: response.status,
           details: data,
         } as ApiError;

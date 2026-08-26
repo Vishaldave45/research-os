@@ -1,6 +1,6 @@
 import React from 'react';
 import { RegisterForm } from '../components/RegisterForm';
-import { Compass, Sparkles, Network, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { BrainCircuit } from 'lucide-react';
 
 interface RegisterPageProps {
   onNavigateToLogin: () => void;
@@ -19,21 +19,16 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
       <div className="relative w-full max-w-md space-y-6">
         {/* Brand Header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-800 text-white shadow-md shadow-indigo-500/20 mb-1">
-            <Compass className="h-6 w-6" />
+          <div className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-500/20 mb-1">
+            <BrainCircuit className="h-6 w-6" />
           </div>
 
-          <div className="flex items-center justify-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              ResearchOS
-            </h1>
-            <span className="rounded bg-indigo-50 px-2 py-0.5 text-[10px] font-bold font-mono text-indigo-700 uppercase border border-indigo-200/60">
-              Core v2
-            </span>
-          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            ResearchOS
+          </h1>
 
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            Establish your research workspace with end-to-end evidence lineage
+            Create your research workspace.
           </p>
         </div>
 
@@ -44,7 +39,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
               Create your account
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Get started with an isolated research lab and canonical dataset.
+              Get started with an isolated research workspace.
             </p>
           </div>
 
