@@ -20,6 +20,7 @@ import {
 } from '../types/research';
 import { entitiesApi } from '../services/api/entities.api';
 import { apiClient } from '../services/api/client';
+import { useAuthStore } from '../features/auth/store/authStore';
 import { isRelationSemanticallyAllowed, wouldCreateCycle } from '../utils/relationshipRules';
 
 const DEFAULT_WORKSPACE: Workspace = {
@@ -267,9 +268,9 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
         const msg = err.message || 'Unable to sync research entities from backend. Please verify your connection or retry.';
         console.warn('Backend sync error:', err);
         if (err.status === 401) {
+          useAuthStore.getState().logout();
           set({
-            isAuthModalOpen: true,
-            error: 'Authentication session expired or missing. Please sign in again.',
+            error: null,
           });
         } else {
           set({ error: msg });

@@ -130,7 +130,8 @@ class ApiClient {
     };
 
     const accessToken = this.getAccessToken();
-    if (accessToken) {
+    const isPublicAuth = endpoint.includes('/auth/login') || endpoint.includes('/auth/register') || endpoint.includes('/auth/refresh');
+    if (accessToken && !isPublicAuth) {
       headers['Authorization'] = `Bearer ${accessToken}`;
     }
 
