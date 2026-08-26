@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   Table as TableIcon,
   Search,
@@ -14,6 +14,7 @@ import { EntityType, ResearchEntity } from '../../types/research';
 
 export const EntityTableView: React.FC = () => {
   const {
+    getAllEntities,
     selectEntity,
     setViewMode,
     openCreateModal,
@@ -24,51 +25,25 @@ export const EntityTableView: React.FC = () => {
   const [sortField, setSortField] = useState<'code' | 'title' | 'type' | 'createdAt'>('type');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  // Bolt Optimization: Subscribe directly to individual entity slices from Zustand
-  // and memoize aggregation, filtering, and sorting operations.
-  // This avoids re-creating array copies and re-executing string formatting/sorting on every render frame
-  // (e.g. during typing in search input before state update finishes or unrelated store updates).
-  const questions = useResearchStore((s) => s.questions);
-  const papers = useResearchStore((s) => s.papers);
-  const gaps = useResearchStore((s) => s.gaps);
-  const hypotheses = useResearchStore((s) => s.hypotheses);
-  const experiments = useResearchStore((s) => s.experiments);
-  const results = useResearchStore((s) => s.results);
-  const decisions = useResearchStore((s) => s.decisions);
-  const claims = useResearchStore((s) => s.claims);
+  const allEntities = getAllEntities();
 
-  const allEntities = useMemo(() => {
-    return [
-      ...questions,
-      ...papers,
-      ...gaps,
-      ...hypotheses,
-      ...experiments,
-      ...results,
-      ...decisions,
-      ...claims,
-    ];
-  }, [questions, papers, gaps, hypotheses, experiments, results, decisions, claims]);
+  const filtered = allEntities.filter((e) => {
+    if (typeFilter !== 'all' && e.type !== typeFilter) return false;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      const text = `${e.code} ${e.title} ${e.type}`.toLowerCase();
+      return text.includes(q);
+    }
+    return true;
+  });
 
-  const sorted = useMemo(() => {
-    const filtered = allEntities.filter((e) => {
-      if (typeFilter !== 'all' && e.type !== typeFilter) return false;
-      if (search.trim()) {
-        const q = search.toLowerCase();
-        const text = `${e.code} ${e.title} ${e.type}`.toLowerCase();
-        return text.includes(q);
-      }
-      return true;
-    });
-
-    return [...filtered].sort((a, b) => {
-      const aVal = a[sortField] || '';
-      const bVal = b[sortField] || '';
-      if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }, [allEntities, typeFilter, search, sortField, sortOrder]);
+  const sorted = [...filtered].sort((a, b) => {
+    const aVal = a[sortField] || '';
+    const bVal = b[sortField] || '';
+    if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+    return 0;
+  });
 
   const exportCSV = () => {
     const headers = ['Code', 'Type', 'Title', 'Status', 'Created At'];
