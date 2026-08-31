@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "test": "vitest run",
     "preview": "vite preview --host 0.0.0.0 --port 3000",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
@@ -15,7 +16,6 @@
     "@vitejs/plugin-react": "^5.0.4",
     "@xyflow/react": "^12.11.3",
     "canvas-confetti": "^1.9.4",
-    "firebase": "^12.18.0",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "react": "^19.0.1",
@@ -25,10 +25,15 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.6",
     "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^22.14.0",
     "autoprefixer": "^10.4.21",
+    "jsdom": "^30.0.1",
     "tailwindcss": "^4.1.14",
-    "typescript": "~5.8.2"
+    "typescript": "~5.8.2",
+    "vitest": "^4.1.11"
   }
 }
