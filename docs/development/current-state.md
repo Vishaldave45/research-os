@@ -1,30 +1,19 @@
-# Current Repository & Architecture State (Milestone Baseline Audit)
+# Current Repository & Architecture State (Milestone v1.0.0 Readiness)
 
-## Baseline Summary
-- **Official GitHub Release**: `v0.1.0 — Foundation` (Commit `92c42f7`)
-- **Active Development Branch**: `dev` (Currently tracking toward `v0.2.0 — Research Core`)
+## Release Summary
+- **Baseline Release**: `v0.1.0 — Foundation` (`92c42f7`)
+- **Current Target Release**: `v1.0.0 — Multi-Domain Scientific Reasoning & Evidence Provenance OS`
+- **Active Branch**: `dev` / `main`
 - **Backend Architecture**: FastAPI + SQLAlchemy 2.0 Async + PostgreSQL 16 + Alembic (`c3f5a1b4d7e8`)
 - **Frontend Architecture**: React 19 + Vite 6 + Tailwind v4 + TypeScript 5.8 + Zustand + @xyflow/react
-- **Test Suite**: 31 Backend Pytest Suites Passing (100% against live PostgreSQL)
+- **Test Suite**: 34 Backend Pytest Suites Passing (100% against live PostgreSQL)
 
-## Implemented Entity Archetypes (10 Tables)
-1. `ResearchQuestion` (`questions`)
-2. `Paper` (`papers`)
-3. `Evidence` (`evidence_items`)
-4. `Dataset` (`datasets`)
-5. `ModelRegistry` (`model_registry`)
-6. `Gap` (`gaps`)
-7. `Hypothesis` (`hypotheses`)
-8. `Experiment` (`experiments`)
-9. `Result` (`results`)
-10. `Decision` (`decisions`)
-11. `Claim` (`claims`)
-12. `Relationship` (`relationships`)
-13. `Comment` (`comments`)
-14. `ResearchReview` (`research_reviews`)
-15. `AuditLog` (`audit_logs`)
-
-## Identified Architectural Debt for Foundation Hardening (Phase 0.1)
-1. **Frontend `client.ts` Mock Fallbacks**: `src/services/api/client.ts` still contains ~700 lines of legacy in-memory localStorage/mock-routing methods that intercept calls when `handleInternalRoute` is used rather than performing clean `fetch()` calls to `http://localhost:8000/api/v1`.
-2. **Legacy Firebase Artifacts**: Unused Firebase scaffolding files (`firebase-applet-config.json`, `firebase-blueprint.json`, `firestore.rules`) should be cleaned up.
-3. **Frontend Vite API Proxy**: `vite.config.ts` needs a proxy configured for `/api` to route cleanly to `http://localhost:8000`.
+## Milestones Completed & Hardened
+- ✅ **v0.1.x Foundation Hardening**: Architecture docs, ADRs, Vite API proxy, real HTTP `fetch()` client.
+- ✅ **v0.2.0 Research Core**: 10-Entity DAG (`Questions`, `Literature`, `Evidence`, `Datasets`, `Models`, `Gaps`, `Hypotheses`, `Experiments`, `Results`, `Decisions`, `Claims`), visual linking, and semantic ontology rule checking.
+- ✅ **v0.3.0 Experiment Traceability & Deep Lineage**: Recursive backward provenance graph traversals from Claims to Literature roots.
+- ✅ **v0.4.0 CollaborationOS**: Contextual threaded comments, peer review verification verdicts, and immutable audit logs in Node Inspector.
+- ✅ **v0.5.0 Integrations**: External adapters for BibTeX/Zotero, MLflow telemetry sync, and GitHub commit provenance.
+- ✅ **v0.6.0 AI Research Copilot & Grounded RAG**: Provider abstraction layer (Gemini, Local) with PostgreSQL graph context builder and entity citations.
+- ✅ **v0.7.0 PublicationOS**: Manuscript composer, IEEEtran LaTeX export, BibTeX bibliography compiler, and automated Evidence Traceability Matrix.
+- ✅ **v1.0.0 Release Verification**: Full multi-tenant isolation, clean build, and 100% test pass rate.
