@@ -103,3 +103,63 @@ async def summarize_evidence_chain(
         return await service.summarize_evidence_chain(workspace_id, question_id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+# --- Phase 6: Synthesis AI Engine Endpoints ---
+from app.api.deps import get_current_workspace_context
+from app.models.workspace import WorkspaceMembership
+from app.schemas.synthesis_engine import (
+    GapDiscoveryRequest,
+    GapDiscoveryResponse,
+    HypothesisGenerationRequest,
+    HypothesisGenerationResponse,
+    ClaimAuditRequest,
+    ClaimAuditResponse,
+    InsertProposalRequest,
+)
+from app.services.synthesis_ai_service import SynthesisAIService
+
+
+@router.post("/discover-gaps", response_model=GapDiscoveryResponse, status_code=status.HTTP_200_OK)
+async def discover_gaps_ai(
+    req: GapDiscoveryRequest,
+    ws_ctx: tuple[uuid.UUID, WorkspaceMembership] = Depends(get_current_workspace_context),
+    db: AsyncSession = Depends(get_db),
+):
+    workspace_id, _ = ws_ctx
+    service = SynthesisAIService(db)
+    return await service.discover_gaps(workspace_id, req)
+
+
+@router.post("/generate-hypotheses", response_model=HypothesisGenerationResponse, status_code=status.HTTP_200_OK)
+async def generate_hypotheses_ai(
+    req: HypothesisGenerationRequest,
+    ws_ctx: tuple[uuid.UUID, WorkspaceMembership] = Depends(get_current_workspace_context),
+    db: AsyncSession = Depends(get_db),
+):
+    workspace_id, _ = ws_ctx
+    service = SynthesisAIService(db)
+    return await service.generate_hypotheses(workspace_id, req)
+
+
+@router.post("/audit-claim", response_model=ClaimAuditResponse, status_code=status.HTTP_200_OK)
+async def audit_claim_ai(
+    req: ClaimAuditRequest,
+    ws_ctx: tuple[uuid.UUID, WorkspaceMembership] = Depends(get_current_workspace_context),
+    db: AsyncSession = Depends(get_db),
+):
+    workspace_id, _ = ws_ctx
+    service = SynthesisAIService(db)
+    return await service.audit_claim(workspace_id, req)
+
+
+@router.post("/accept-proposal", status_code=status.HTTP_201_CREATED)
+async def accept_proposal_into_graph(
+    req: InsertProposalRequest,
+    ws_ctx: tuple[uuid.UUID, WorkspaceMembership] = Depends(get_current_workspace_context),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    workspace_id, _ = ws_ctx
+    service = SynthesisAIService(db)
+    return await service.accept_proposal(workspace_id, current_user.id, req)

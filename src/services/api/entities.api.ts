@@ -683,5 +683,19 @@ export const entitiesApi = {
   async getLatex(): Promise<string> {
     return apiClient.get('/manuscripts/latex');
   },
+
+  // Synthesis AI Engine (Phase 6)
+  async discoverGaps(data?: { paper_ids?: string[]; focus_topic?: string; max_gaps?: number }): Promise<any> {
+    return apiClient.post('/synthesis/discover-gaps', data || {});
+  },
+  async generateHypotheses(data?: { gap_id?: string; gap_description?: string; domain_context?: string; max_candidates?: number }): Promise<any> {
+    return apiClient.post('/synthesis/generate-hypotheses', data || {});
+  },
+  async auditClaim(data?: { claim_id?: string; statement?: string }): Promise<any> {
+    return apiClient.post('/synthesis/audit-claim', data || {});
+  },
+  async acceptProposal(data: { proposal_type: string; title_or_statement: string; description_or_rationale?: string; impact_or_confidence?: string; connect_to_codes?: string[] }): Promise<any> {
+    return apiClient.post('/synthesis/accept-proposal', data);
+  },
 };
 
