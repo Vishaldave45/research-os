@@ -35,6 +35,7 @@ from app.api.v1.collaboration import router as collaboration_router
 from app.api.v1.manuscript import router as manuscript_router
 from app.api.v1.synthesis import router as synthesis_router
 from app.api.v1.integrations import router as integrations_router
+from app.api.v1.copilot import router as copilot_router
 from app.api.v1.seed import router as seed_router
 
 # Setup server-side logger
@@ -216,6 +217,7 @@ def create_application() -> FastAPI:
     application.include_router(manuscript_router, prefix=settings.API_V1_STR)
     application.include_router(synthesis_router, prefix=settings.API_V1_STR)
     application.include_router(integrations_router, prefix=settings.API_V1_STR)
+    application.include_router(copilot_router, prefix=settings.API_V1_STR)
     application.include_router(seed_router, prefix=settings.API_V1_STR)
 
     # Health & Readiness Endpoints (P0-16)
