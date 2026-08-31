@@ -638,5 +638,17 @@ export const entitiesApi = {
   async deleteRelationship(id: string): Promise<void> {
     return apiClient.delete(`/relationships/${id}`);
   },
+
+  // Global Search & Research Timeline
+  async globalSearch(query: string, typeFilter?: string): Promise<any> {
+    const params = new URLSearchParams({ q: query });
+    if (typeFilter && typeFilter !== 'all') {
+      params.append('type', typeFilter);
+    }
+    return apiClient.get(`/search?${params.toString()}`);
+  },
+  async getTimeline(): Promise<any> {
+    return apiClient.get('/timeline');
+  },
 };
 
