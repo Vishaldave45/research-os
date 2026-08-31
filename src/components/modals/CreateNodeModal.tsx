@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Plus, Sparkles } from 'lucide-react';
 import { useResearchStore } from '../../store/useResearchStore';
 import { EntityType, ResearchEntity } from '../../types/research';
@@ -160,29 +161,40 @@ export const CreateNodeModal: React.FC = () => {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs">
-      <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+  const modalContent = (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
+      <div
+        onClick={closeCreateModal}
+        className="fixed inset-0 z-0"
+        aria-hidden="true"
+      />
+
+      <div className="relative z-10 my-auto w-full max-w-lg max-h-[92vh] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
+        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 bg-slate-50/50 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700 shadow-2xs">
               <Plus className="h-4 w-4" />
             </div>
-            <h3 className="text-sm font-bold text-slate-900">
-              Create Research Node
-            </h3>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">
+                Create Research Node
+              </h3>
+              <p className="text-[11px] text-slate-500">
+                Add an entity to your active scientific graph
+              </p>
+            </div>
           </div>
           <button
             onClick={closeCreateModal}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+            className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-200/60 hover:text-slate-700 transition cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
           {errorMessage && (
             <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
               <span>{errorMessage}</span>
@@ -211,9 +223,9 @@ export const CreateNodeModal: React.FC = () => {
                   key={t}
                   type="button"
                   onClick={() => handleTypeChange(t)}
-                  className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold capitalize transition-all ${
+                  className={`rounded-xl border px-2.5 py-1.5 text-xs font-semibold capitalize transition-all cursor-pointer ${
                     type === t
-                      ? 'border-indigo-600 bg-indigo-50 text-indigo-900 ring-2 ring-indigo-200'
+                      ? 'border-indigo-600 bg-indigo-50 text-indigo-900 ring-2 ring-indigo-200 shadow-2xs'
                       : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                   }`}
                 >
@@ -226,24 +238,24 @@ export const CreateNodeModal: React.FC = () => {
           {/* Code & Title */}
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700">Code</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Code</label>
               <input
                 type="text"
                 required
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-1.5 font-mono text-xs focus:border-indigo-500 focus:outline-hidden"
+                className="w-full rounded-xl border border-slate-300 px-3 py-1.5 font-mono text-xs focus:border-indigo-500 focus:outline-hidden"
               />
             </div>
             <div className="col-span-2">
-              <label className="block text-xs font-semibold text-slate-700">Title</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Title</label>
               <input
                 type="text"
                 required
                 placeholder="Descriptive title..."
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-1.5 text-xs focus:border-indigo-500 focus:outline-hidden"
+                className="w-full rounded-xl border border-slate-300 px-3 py-1.5 text-xs focus:border-indigo-500 focus:outline-hidden"
               />
             </div>
           </div>
@@ -252,54 +264,54 @@ export const CreateNodeModal: React.FC = () => {
           {type === 'paper' && (
             <div className="grid grid-cols-3 gap-2">
               <div className="col-span-2">
-                <label className="block text-xs font-semibold text-slate-700">Authors</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Authors</label>
                 <input
                   type="text"
                   placeholder="e.g. Smith, J., Doe, A."
                   value={authors}
                   onChange={(e) => setAuthors(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-1.5 text-xs"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-1.5 text-xs focus:border-indigo-500 focus:outline-hidden"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700">Year</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Year</label>
                 <input
                   type="number"
                   value={year}
                   onChange={(e) => setYear(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-1.5 text-xs"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-1.5 text-xs focus:border-indigo-500 focus:outline-hidden"
                 />
               </div>
             </div>
           )}
 
           {type === 'result' && (
-            <div className="grid grid-cols-3 gap-2 rounded-lg bg-slate-50 p-3">
+            <div className="grid grid-cols-3 gap-2 rounded-xl bg-slate-50 p-3 border border-slate-200">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-600">FPS</label>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">FPS</label>
                 <input
                   type="text"
                   value={metricFps}
                   onChange={(e) => setMetricFps(e.target.value)}
-                  className="mt-1 w-full rounded border border-slate-200 bg-white px-2 py-1 text-xs font-mono"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-mono"
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-slate-600">Power (Watts)</label>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">Power (W)</label>
                 <input
                   type="text"
                   value={metricWatts}
                   onChange={(e) => setMetricWatts(e.target.value)}
-                  className="mt-1 w-full rounded border border-slate-200 bg-white px-2 py-1 text-xs font-mono"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-mono"
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-slate-600">AUC</label>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">AUC</label>
                 <input
                   type="text"
                   value={metricAuc}
                   onChange={(e) => setMetricAuc(e.target.value)}
-                  className="mt-1 w-full rounded border border-slate-200 bg-white px-2 py-1 text-xs font-mono"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-mono"
                 />
               </div>
             </div>
@@ -307,7 +319,7 @@ export const CreateNodeModal: React.FC = () => {
 
           {/* Statement / Description */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700">
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
               {type === 'hypothesis' || type === 'claim'
                 ? 'Scientific Statement'
                 : type === 'result'
@@ -319,22 +331,23 @@ export const CreateNodeModal: React.FC = () => {
               placeholder="Detailed description or formal statement..."
               value={statementOrDesc}
               onChange={(e) => setStatementOrDesc(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-1.5 text-xs focus:border-indigo-500 focus:outline-hidden"
+              className="w-full rounded-xl border border-slate-300 px-3 py-1.5 text-xs focus:border-indigo-500 focus:outline-hidden resize-none"
             />
           </div>
 
           {/* Footer Actions */}
-          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
             <button
               type="button"
               onClick={closeCreateModal}
-              className="rounded-xl border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              className="rounded-xl border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 shadow-xs cursor-pointer"
+              disabled={submitting}
+              className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 shadow-sm transition disabled:opacity-50 cursor-pointer"
             >
               Create Node
             </button>
@@ -343,4 +356,9 @@ export const CreateNodeModal: React.FC = () => {
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined'
+    ? createPortal(modalContent, document.body)
+    : modalContent;
 };
+

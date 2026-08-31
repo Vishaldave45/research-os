@@ -323,125 +323,132 @@ export const ResearchCanvas: React.FC = () => {
           className="!bottom-4 !right-4 !rounded-xl !border !border-slate-200 !shadow-sm !bg-white/90"
         />
 
-        {/* Top Control Bar Panel */}
-        <Panel position="top-left" className="m-3 flex flex-wrap items-center gap-2">
-          {/* Search Bar */}
-          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white/95 px-3 py-1.5 shadow-xs backdrop-blur">
-            <Search className="h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search code or keywords..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-48 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-hidden"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="text-[10px] text-slate-400 hover:text-slate-700"
-              >
-                Clear
-              </button>
-            )}
-          </div>
+        {/* Top Floating Control Bar - Left & Right Organized */}
+        <Panel position="top-left" className="!m-0 !top-3.5 !left-3.5 !right-3.5 !w-[calc(100%-1.75rem)] !max-w-none z-20 pointer-events-none">
+          <div className="flex items-center justify-between gap-3 w-full">
+            {/* LEFT SIDE: Filter Pill Bar + Quick Search */}
+            <div className="flex items-center gap-2 pointer-events-auto min-w-0">
+              {/* Type Filter Pills */}
+              <div className="flex items-center gap-1 rounded-full border border-slate-200/90 bg-white/95 p-1 shadow-xs backdrop-blur-md overflow-x-auto no-scrollbar max-w-[calc(100vw-360px)] lg:max-w-none">
+                <div className="flex items-center pl-2.5 pr-1 text-slate-400">
+                  <Filter className="h-3.5 w-3.5" />
+                </div>
+                {filterOptions.map((opt) => (
+                  <button
+                    key={opt.key}
+                    onClick={() => setTypeFilter(opt.key)}
+                    className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                      typeFilter === opt.key
+                        ? 'bg-indigo-600 text-white shadow-2xs'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    }`}
+                  >
+                    <span>{opt.label}</span>
+                    <span
+                      className={`rounded-full px-1.5 py-0.2 text-[10px] font-mono ${
+                        typeFilter === opt.key ? 'bg-indigo-700 text-white' : 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      {opt.count}
+                    </span>
+                  </button>
+                ))}
+              </div>
 
-          {/* Type Filter Pills */}
-          <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white/95 p-1 shadow-xs backdrop-blur">
-            <Filter className="ml-1.5 h-3.5 w-3.5 text-slate-400" />
-            {filterOptions.map((opt) => (
-              <button
-                key={opt.key}
-                onClick={() => setTypeFilter(opt.key)}
-                className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium transition-all ${
-                  typeFilter === opt.key
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                }`}
-              >
-                <span>{opt.label}</span>
-                <span
-                  className={`rounded-full px-1.5 py-0.2 text-[10px] ${
-                    typeFilter === opt.key ? 'bg-indigo-700 text-white' : 'bg-slate-100 text-slate-600'
+              {/* Quick Search */}
+              <div className="hidden xl:flex items-center gap-2 rounded-full border border-slate-200/90 bg-white/95 px-3 py-1.5 shadow-xs backdrop-blur-md">
+                <Search className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Filter nodes..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-32 lg:w-40 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-hidden bg-transparent"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="text-[10px] font-semibold text-slate-400 hover:text-slate-700 bg-slate-100 rounded-full px-1.5 py-0.2 cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* RIGHT SIDE: Layout Toggle + Add Node */}
+            <div className="flex items-center gap-2 pointer-events-auto shrink-0">
+              {/* Layout Toggle */}
+              <div className="flex items-center gap-1 rounded-full border border-slate-200/90 bg-white/95 p-1 shadow-xs backdrop-blur-md">
+                <button
+                  onClick={() => setLayoutMode('pipeline')}
+                  title="Hierarchical Reasoning Pipeline"
+                  className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                    layoutMode === 'pipeline'
+                      ? 'bg-slate-900 text-white shadow-2xs'
+                      : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
-                  {opt.count}
-                </span>
+                  <GitFork className="h-3.5 w-3.5" />
+                  <span>Pipeline View</span>
+                </button>
+                <button
+                  onClick={() => setLayoutMode('grouped')}
+                  title="Grouped Archetype Clusters"
+                  className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                    layoutMode === 'grouped'
+                      ? 'bg-slate-900 text-white shadow-2xs'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <Layers className="h-3.5 w-3.5" />
+                  <span>Clustered</span>
+                </button>
+              </div>
+
+              {/* Quick Add Node Button */}
+              <button
+                onClick={() => openCreateModal()}
+                className="flex items-center gap-1.5 rounded-full bg-indigo-600 hover:bg-indigo-700 px-4 py-1.5 text-xs font-semibold text-white shadow-xs transition-all cursor-pointer whitespace-nowrap active:scale-95"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Add Node</span>
               </button>
-            ))}
+            </div>
           </div>
-        </Panel>
-
-        {/* Top Right Layout and Action Bar */}
-        <Panel position="top-right" className="m-3 flex items-center gap-2">
-          {/* Layout Toggle */}
-          <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white/95 p-1 shadow-xs backdrop-blur">
-            <button
-              onClick={() => setLayoutMode('pipeline')}
-              title="Hierarchical Reasoning Pipeline"
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
-                layoutMode === 'pipeline'
-                  ? 'bg-slate-900 text-white'
-                  : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <GitFork className="h-3.5 w-3.5" />
-              <span>Pipeline View</span>
-            </button>
-            <button
-              onClick={() => setLayoutMode('grouped')}
-              title="Grouped Archetype Clusters"
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
-                layoutMode === 'grouped'
-                  ? 'bg-slate-900 text-white'
-                  : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <Layers className="h-3.5 w-3.5" />
-              <span>Clustered</span>
-            </button>
-          </div>
-
-          {/* Quick Add Node Button */}
-          <button
-            onClick={() => openCreateModal()}
-            className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-medium text-white shadow-xs hover:bg-indigo-700 transition-all cursor-pointer"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Add Node</span>
-          </button>
         </Panel>
 
         {/* Pipeline Column Guides (when in pipeline layout) */}
         {layoutMode === 'pipeline' && (
-          <Panel position="bottom-left" className="m-3">
-            <div className="flex items-center gap-6 rounded-xl border border-slate-200 bg-white/90 px-4 py-2 text-[11px] font-medium text-slate-500 shadow-xs backdrop-blur">
+          <Panel position="bottom-left" className="m-3.5">
+            <div className="flex items-center gap-4 rounded-2xl border border-slate-200/90 bg-white/95 px-4 py-2 text-[11px] font-semibold text-slate-500 shadow-sm backdrop-blur-md">
               <span className="flex items-center gap-1.5 text-indigo-700">
-                <span className="h-2 w-2 rounded-full bg-indigo-500" />
-                1. Questions & Literature
+                <span className="h-2 w-2 rounded-full bg-indigo-500 ring-2 ring-indigo-100" />
+                1. Clinical Questions & Papers
               </span>
-              <span>→</span>
+              <span className="text-slate-300">→</span>
               <span className="flex items-center gap-1.5 text-amber-700">
-                <span className="h-2 w-2 rounded-full bg-amber-500" />
-                2. Research Gaps
+                <span className="h-2 w-2 rounded-full bg-amber-500 ring-2 ring-amber-100" />
+                2. Formulated Gaps
               </span>
-              <span>→</span>
+              <span className="text-slate-300">→</span>
               <span className="flex items-center gap-1.5 text-teal-700">
-                <span className="h-2 w-2 rounded-full bg-teal-500" />
+                <span className="h-2 w-2 rounded-full bg-teal-500 ring-2 ring-teal-100" />
                 3. Hypotheses
               </span>
-              <span>→</span>
+              <span className="text-slate-300">→</span>
               <span className="flex items-center gap-1.5 text-rose-700">
-                <span className="h-2 w-2 rounded-full bg-rose-500" />
+                <span className="h-2 w-2 rounded-full bg-rose-500 ring-2 ring-rose-100" />
                 4. Experiments
               </span>
-              <span>→</span>
+              <span className="text-slate-300">→</span>
               <span className="flex items-center gap-1.5 text-cyan-700">
-                <span className="h-2 w-2 rounded-full bg-cyan-500" />
+                <span className="h-2 w-2 rounded-full bg-cyan-500 ring-2 ring-cyan-100" />
                 5. Results
               </span>
-              <span>→</span>
+              <span className="text-slate-300">→</span>
               <span className="flex items-center gap-1.5 text-purple-700">
-                <span className="h-2 w-2 rounded-full bg-purple-500" />
+                <span className="h-2 w-2 rounded-full bg-purple-500 ring-2 ring-purple-100" />
                 6. Decisions & Claims
               </span>
             </div>
@@ -451,13 +458,13 @@ export const ResearchCanvas: React.FC = () => {
         {/* Empty Workspace State */}
         {nodes.length === 0 && (
           <Panel position="top-center" className="mt-32">
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white/95 p-8 shadow-xl backdrop-blur max-w-md text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 mb-4">
-                <Layers className="h-6 w-6" />
+            <div className="flex flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white/95 p-8 shadow-2xl backdrop-blur-md max-w-md text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 mb-4 ring-8 ring-indigo-50/50">
+                <Layers className="h-7 w-7" />
               </div>
               <h3 className="text-base font-bold text-slate-900">Research Graph is Empty</h3>
-              <p className="mt-1 text-xs text-slate-500 max-w-sm">
-                No research entities found in this workspace. Start by adding a research question or seed the canonical WCE depth-reduction dataset.
+              <p className="mt-1.5 text-xs text-slate-500 max-w-sm leading-relaxed">
+                No research entities found in this workspace. Start by adding a research inquiry or seed the canonical WCE depth-reduction dataset.
               </p>
               <div className="mt-6 flex items-center gap-3">
                 <button

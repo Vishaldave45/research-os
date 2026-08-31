@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Search,
   X,
@@ -141,12 +142,18 @@ export const CommandPalette: React.FC = () => {
     a.label.toLowerCase().includes(query.toLowerCase())
   );
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-slate-900/40 p-4 backdrop-blur-xs">
-      <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+  const modalContent = (
+    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-20 sm:pt-24 p-4 overflow-y-auto bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
+      <div
+        onClick={() => setCommandPaletteOpen(false)}
+        className="fixed inset-0 z-0"
+        aria-hidden="true"
+      />
+
+      <div className="relative z-10 w-full max-w-xl max-h-[85vh] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
         {/* Search Input */}
-        <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-3.5">
-          <Search className="h-5 w-5 text-slate-400" />
+        <div className="flex items-center gap-3 border-b border-slate-100 px-4.5 py-3.5 bg-white shrink-0">
+          <Search className="h-4.5 w-4.5 text-slate-400 shrink-0" />
           <input
             type="text"
             autoFocus
@@ -155,13 +162,13 @@ export const CommandPalette: React.FC = () => {
             onChange={(e) => setQuery(e.target.value)}
             className="flex-1 text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-hidden"
           />
-          <kbd className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] font-mono text-slate-500">
+          <kbd className="rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] font-mono font-semibold text-slate-500 shadow-2xs">
             ESC
           </kbd>
         </div>
 
         {/* Results List */}
-        <div className="max-h-96 overflow-y-auto p-2 space-y-4">
+        <div className="flex-1 overflow-y-auto p-2.5 space-y-4">
           {/* Quick Actions */}
           {filteredActions.length > 0 && (
             <div>
@@ -173,7 +180,7 @@ export const CommandPalette: React.FC = () => {
                   <button
                     key={idx}
                     onClick={action.handler}
-                    className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+                    className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-2.5">
                       {action.icon}
@@ -203,7 +210,7 @@ export const CommandPalette: React.FC = () => {
                       setViewMode('canvas');
                       setCommandPaletteOpen(false);
                     }}
-                    className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left hover:bg-slate-100 transition-colors"
+                    className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left hover:bg-indigo-50/70 hover:text-indigo-900 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-2 truncate">
                       <span className="font-mono text-xs font-bold text-indigo-700">
@@ -226,4 +233,9 @@ export const CommandPalette: React.FC = () => {
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined'
+    ? createPortal(modalContent, document.body)
+    : modalContent;
 };
+

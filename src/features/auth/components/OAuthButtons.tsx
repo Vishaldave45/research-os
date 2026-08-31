@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, UserCheck } from 'lucide-react';
 
 interface OAuthButtonsProps {
   onSuccess?: () => void;
 }
 
 export const OAuthButtons: React.FC<OAuthButtonsProps> = ({ onSuccess }) => {
-  const { loginWithOAuth, isLoading } = useAuthStore();
+  const { loginWithOAuth, connectOAuthDev, isLoading } = useAuthStore();
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [isDemoSigningIn, setIsDemoSigningIn] = useState(false);
 
   const handleGoogleLogin = async () => {
     setIsAuthenticating(true);
@@ -19,6 +20,22 @@ export const OAuthButtons: React.FC<OAuthButtonsProps> = ({ onSuccess }) => {
       // Handled in store
     } finally {
       setIsAuthenticating(false);
+    }
+  };
+
+  const handleDemoSignIn = async () => {
+    setIsDemoSigningIn(true);
+    try {
+      await connectOAuthDev({
+        provider: 'google',
+        email: 'lead.researcher@lab.org',
+        full_name: 'Dr. Elena Vance',
+      });
+      onSuccess?.();
+    } catch {
+      // Handled in store
+    } finally {
+      setIsDemoSigningIn(false);
     }
   };
 
@@ -35,12 +52,12 @@ export const OAuthButtons: React.FC<OAuthButtonsProps> = ({ onSuccess }) => {
         </div>
       </div>
 
-      <div>
+      <div className="space-y-2">
         {/* Google OAuth Button */}
         <button
           type="button"
           id="btn-oauth-google"
-          disabled={isLoading || isAuthenticating}
+          disabled={isLoading || isAuthenticating || isDemoSigningIn}
           onClick={handleGoogleLogin}
           className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-800 text-xs font-semibold shadow-2xs transition hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
@@ -68,12 +85,29 @@ export const OAuthButtons: React.FC<OAuthButtonsProps> = ({ onSuccess }) => {
           )}
           <span>Continue with Google</span>
         </button>
+
+        {/* 1-Click Fast Demo Login */}
+        <button
+          type="button"
+          id="btn-demo-lead-researcher"
+          disabled={isLoading || isAuthenticating || isDemoSigningIn}
+          onClick={handleDemoSignIn}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-indigo-200 bg-indigo-50/60 hover:bg-indigo-100/70 text-indigo-700 text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50 cursor-pointer"
+        >
+          {isDemoSigningIn ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-600" />
+          ) : (
+            <UserCheck className="h-3.5 w-3.5 text-indigo-600" />
+          )}
+          <span>Fast-Connect: Dr. Elena Vance (Lead PI)</span>
+        </button>
       </div>
 
       <div className="flex items-center justify-center gap-1.5 pt-1 text-[11px] text-slate-500">
         <Sparkles className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
-        <span>Instant workspace provisioning with your Google Account</span>
+        <span>Connected to encrypted PostgreSQL and Auth session</span>
       </div>
     </div>
   );
 };
+

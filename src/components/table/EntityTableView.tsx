@@ -105,14 +105,14 @@ export const EntityTableView: React.FC = () => {
   return (
     <div className="flex h-full flex-col bg-slate-50 overflow-hidden">
       {/* Header */}
-      <div className="border-b border-slate-200 bg-white px-6 py-4">
+      <div className="border-b border-slate-200/90 bg-white/90 px-6 py-4 backdrop-blur-md">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-800">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 border border-slate-200/80 text-slate-800 shadow-2xs">
                 <TableIcon className="h-4 w-4" />
               </div>
-              <h2 className="text-lg font-bold text-slate-900">
+              <h2 className="text-base lg:text-lg font-bold text-slate-900 tracking-tight">
                 Research Entity Repository & Registry
               </h2>
             </div>
@@ -121,17 +121,17 @@ export const EntityTableView: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <button
               onClick={exportCSV}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs"
+              className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs transition cursor-pointer"
             >
               <Download className="h-4 w-4" />
               <span>Export CSV</span>
             </button>
             <button
               onClick={() => openCreateModal()}
-              className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 shadow-xs"
+              className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 shadow-sm transition cursor-pointer"
             >
               <Plus className="h-4 w-4" />
               <span>Add Entity</span>
@@ -140,23 +140,23 @@ export const EntityTableView: React.FC = () => {
         </div>
 
         {/* Filters */}
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1 text-xs">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-1.5 text-xs">
               <Search className="h-3.5 w-3.5 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search across all entities..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-48 bg-transparent focus:outline-hidden"
+                className="w-56 bg-transparent focus:outline-hidden text-xs text-slate-800"
               />
             </div>
 
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value as any)}
-              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700 focus:outline-hidden"
+              className="rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-1.5 text-xs font-medium text-slate-700 focus:outline-hidden cursor-pointer"
             >
               <option value="all">All Entity Types</option>
               <option value="question">Questions</option>
@@ -170,26 +170,26 @@ export const EntityTableView: React.FC = () => {
             </select>
           </div>
 
-          <div className="text-xs text-slate-500">
-            Showing <strong>{sorted.length}</strong> of {allEntities.length} records
+          <div className="text-xs font-medium text-slate-500">
+            Showing <strong className="text-slate-900">{sorted.length}</strong> of {allEntities.length} records
           </div>
         </div>
       </div>
 
       {/* Table */}
       <div className="flex-1 overflow-auto p-6">
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xs">
+        <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 font-semibold text-slate-600">
+              <tr className="border-b border-slate-200/90 bg-slate-50/90 font-semibold text-slate-700 sticky top-0 backdrop-blur z-10">
                 <th
                   onClick={() => {
                     setSortField('code');
                     setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
                   }}
-                  className="py-3 px-4 cursor-pointer hover:text-slate-900"
+                  className="py-3.5 px-4.5 cursor-pointer hover:text-slate-900 select-none"
                 >
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5">
                     <span>Code</span>
                     <ArrowUpDown className="h-3 w-3" />
                   </div>
@@ -199,9 +199,9 @@ export const EntityTableView: React.FC = () => {
                     setSortField('type');
                     setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
                   }}
-                  className="py-3 px-4 cursor-pointer hover:text-slate-900"
+                  className="py-3.5 px-4.5 cursor-pointer hover:text-slate-900 select-none"
                 >
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5">
                     <span>Type</span>
                     <ArrowUpDown className="h-3 w-3" />
                   </div>
@@ -211,15 +211,15 @@ export const EntityTableView: React.FC = () => {
                     setSortField('title');
                     setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
                   }}
-                  className="py-3 px-4 cursor-pointer hover:text-slate-900"
+                  className="py-3.5 px-4.5 cursor-pointer hover:text-slate-900 select-none"
                 >
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5">
                     <span>Title / Primary Statement</span>
                     <ArrowUpDown className="h-3 w-3" />
                   </div>
                 </th>
-                <th className="py-3 px-4">Status / Outcome</th>
-                <th className="py-3 px-4 text-right">Actions</th>
+                <th className="py-3.5 px-4.5">Status / Outcome</th>
+                <th className="py-3.5 px-4.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -230,28 +230,30 @@ export const EntityTableView: React.FC = () => {
                     selectEntity(entity.id, entity.type);
                     setViewMode('canvas');
                   }}
-                  className="hover:bg-slate-50/80 cursor-pointer transition-colors"
+                  className="hover:bg-slate-50/80 cursor-pointer transition-colors group"
                 >
-                  <td className="py-3 px-4 font-mono font-bold text-slate-900">
-                    {entity.code}
+                  <td className="py-3.5 px-4.5 font-mono font-bold text-slate-900">
+                    <span className="bg-slate-100/90 border border-slate-200/80 px-2 py-0.5 rounded-md">
+                      {entity.code}
+                    </span>
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3.5 px-4.5">
                     <span
-                      className={`inline-block rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase ${
+                      className={`inline-block rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                         badgeColors[entity.type]
                       }`}
                     >
                       {entity.type}
                     </span>
                   </td>
-                  <td className="py-3 px-4 font-medium text-slate-900 max-w-md truncate">
+                  <td className="py-3.5 px-4.5 font-medium text-slate-900 max-w-md truncate group-hover:text-indigo-600 transition-colors">
                     {entity.title || (entity as any).statement || (entity as any).description}
                   </td>
-                  <td className="py-3 px-4 capitalize text-slate-600">
+                  <td className="py-3.5 px-4.5 capitalize text-slate-600 font-medium">
                     {(entity as any).status || (entity as any).outcome || '—'}
                   </td>
-                  <td className="py-3 px-4 text-right">
-                    <span className="text-[11px] text-indigo-600 font-semibold hover:underline">
+                  <td className="py-3.5 px-4.5 text-right">
+                    <span className="text-[11px] text-indigo-600 font-bold group-hover:underline">
                       Focus on Canvas →
                     </span>
                   </td>

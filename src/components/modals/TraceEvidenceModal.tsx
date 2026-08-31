@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   X,
@@ -76,22 +77,28 @@ export const TraceEvidenceModal: React.FC<TraceEvidenceModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <AnimatePresence>
       <div
         id="trace-evidence-modal-backdrop"
-        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 overflow-y-auto"
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-xs p-4 overflow-y-auto"
       >
+        <div
+          onClick={onClose}
+          className="fixed inset-0 z-0"
+          aria-hidden="true"
+        />
+
         <motion.div
           id="trace-evidence-modal-card"
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ duration: 0.2 }}
-          className="bg-slate-900 border border-slate-700/70 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"
+          className="relative z-10 my-auto bg-slate-900 border border-slate-700/70 rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/90">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/90 shrink-0">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-indigo-500/10 border border-indigo-500/30 rounded-xl text-indigo-400">
                 <Network className="w-5 h-5" />
@@ -111,7 +118,7 @@ export const TraceEvidenceModal: React.FC<TraceEvidenceModalProps> = ({
             <button
               id="close-trace-modal-btn"
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors"
+              className="p-1.5 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -260,10 +267,10 @@ export const TraceEvidenceModal: React.FC<TraceEvidenceModalProps> = ({
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-3.5 border-t border-slate-800 bg-slate-900/90 flex justify-end">
+          <div className="px-6 py-3.5 border-t border-slate-800 bg-slate-900/90 flex justify-end shrink-0">
             <button
               onClick={onClose}
-              className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg transition-colors"
+              className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl transition-colors cursor-pointer"
             >
               Close Trace
             </button>
@@ -272,4 +279,9 @@ export const TraceEvidenceModal: React.FC<TraceEvidenceModalProps> = ({
       </div>
     </AnimatePresence>
   );
+
+  return typeof document !== 'undefined'
+    ? createPortal(modalContent, document.body)
+    : modalContent;
 };
+

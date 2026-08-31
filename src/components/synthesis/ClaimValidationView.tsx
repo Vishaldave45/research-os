@@ -24,25 +24,25 @@ export const ClaimValidationView: React.FC = () => {
   return (
     <div className="flex h-full flex-col bg-slate-50 overflow-hidden">
       {/* Header */}
-      <div className="border-b border-slate-200 bg-white px-6 py-4">
+      <div className="border-b border-slate-200/90 bg-white/90 px-6 py-4 backdrop-blur-md">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-800">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 shadow-2xs">
                 <ShieldCheck className="h-4 w-4" />
               </div>
-              <h2 className="text-lg font-bold text-slate-900">
+              <h2 className="text-base lg:text-lg font-bold text-slate-900 tracking-tight">
                 Evidentiary Claim Auditor & Graph Grounding
               </h2>
             </div>
             <p className="mt-1 text-xs text-slate-500">
-              Validates scientific claims by traversing empirical results, metrics, and literature citations across the research operating graph.
+              Validates scientific claims by traversing empirical results, metrics, and literature citations across the research graph.
             </p>
           </div>
 
           <button
             onClick={() => openCreateModal('claim')}
-            className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 shadow-xs"
+            className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 shadow-sm transition cursor-pointer"
           >
             <Plus className="h-4 w-4" />
             <span>New Claim</span>
@@ -53,9 +53,11 @@ export const ClaimValidationView: React.FC = () => {
       {/* Main Layout: Split claims selector and audit inspector */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left Side: Claims List */}
-        <div className="w-88 border-r border-slate-200 bg-white overflow-y-auto p-4 space-y-3">
-          <div className="text-xs font-bold uppercase tracking-wider text-slate-400 px-1">
-            Auditable Claims ({claims.length})
+        <div className="w-80 lg:w-96 border-r border-slate-200/90 bg-white/80 overflow-y-auto p-4 space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              Auditable Claims ({claims.length})
+            </span>
           </div>
 
           {claims.map((claim) => {
@@ -64,27 +66,27 @@ export const ClaimValidationView: React.FC = () => {
               <div
                 key={claim.id}
                 onClick={() => setSelectedClaimId(claim.id)}
-                className={`cursor-pointer rounded-xl border p-3.5 transition-all ${
+                className={`cursor-pointer rounded-2xl border p-4 transition-all ${
                   isSelected
-                    ? 'border-emerald-600 bg-emerald-50/50 shadow-xs ring-2 ring-emerald-100'
-                    : 'border-slate-200 bg-white hover:border-slate-300'
+                    ? 'border-emerald-600 bg-emerald-50/60 shadow-xs ring-2 ring-emerald-100'
+                    : 'border-slate-200/80 bg-white hover:border-slate-300 hover:shadow-2xs'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs font-bold text-emerald-900">
+                  <span className="font-mono text-xs font-bold text-emerald-900 bg-emerald-100/70 border border-emerald-200/60 px-2 py-0.5 rounded-md">
                     {claim.code}
                   </span>
                   <span className="font-mono text-xs font-bold text-emerald-700">
                     {Math.round(claim.confidenceScore * 100)}% Confidence
                   </span>
                 </div>
-                <h4 className="mt-1.5 text-xs font-bold text-slate-900 line-clamp-2">
+                <h4 className="mt-2 text-xs font-bold text-slate-900 line-clamp-2 leading-snug">
                   {claim.title || claim.statement}
                 </h4>
-                <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
-                  <span className="capitalize">{claim.status}</span>
-                  <span className="text-[10px] text-emerald-700 font-semibold">
-                    Inspect Audit →
+                <div className="mt-3 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-100/80 pt-2">
+                  <span className="capitalize font-medium text-slate-600">{claim.status}</span>
+                  <span className="text-[11px] text-emerald-700 font-bold flex items-center gap-1">
+                    Audit Report <ArrowRight className="h-3 w-3" />
                   </span>
                 </div>
               </div>
@@ -97,28 +99,28 @@ export const ClaimValidationView: React.FC = () => {
           {activeAudit ? (
             <div className="space-y-6 max-w-4xl">
               {/* Score & Verdict Card */}
-              <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-2xs">
-                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
-                  <div>
-                    <span className="font-mono text-xs font-bold text-emerald-800">
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs">
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                  <div className="max-w-xl">
+                    <span className="font-mono text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-md">
                       {activeAudit.claimCode}
                     </span>
-                    <h3 className="text-base font-bold text-slate-900 mt-1">
+                    <h3 className="text-base font-bold text-slate-900 mt-2 leading-snug">
                       {activeAudit.claimStatement}
                     </h3>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-4">
                     <div className="text-right">
                       <div className="text-[10px] uppercase font-bold text-slate-400">
-                        Evidentiary Grounding
+                        Grounding Score
                       </div>
-                      <div className="font-mono text-2xl font-black text-emerald-600">
+                      <div className="font-mono text-3xl font-black text-emerald-600 tracking-tight">
                         {Math.round(activeAudit.evidentiaryScore * 100)}%
                       </div>
                     </div>
                     <div
-                      className={`rounded-xl border px-3 py-2 text-xs font-bold capitalize ${
+                      className={`rounded-2xl border px-3.5 py-2 text-xs font-bold capitalize shadow-2xs ${
                         activeAudit.supportLevel === 'strongly_supported'
                           ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                           : activeAudit.supportLevel === 'contradicted'
@@ -131,13 +133,13 @@ export const ClaimValidationView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="mt-4 text-xs leading-relaxed text-slate-700">
-                  <strong>Graph Audit Critique:</strong> {activeAudit.validationCritique}
+                <div className="mt-4 text-xs leading-relaxed text-slate-700 bg-slate-50/80 p-3.5 rounded-xl border border-slate-200/60">
+                  <strong className="text-slate-900">Evidentiary Audit Critique:</strong> {activeAudit.validationCritique}
                 </div>
               </div>
 
               {/* Supporting Empirical Results */}
-              <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-2xs">
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs">
                 <div className="flex items-center gap-2 mb-4">
                   <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">
@@ -150,22 +152,22 @@ export const ClaimValidationView: React.FC = () => {
                     No empirical results currently linked to support this claim.
                   </p>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-3.5">
                     {activeAudit.supportingResults.map((res) => (
                       <div
                         key={res.id}
                         onClick={() => selectEntity(res.id, 'result')}
-                        className="cursor-pointer rounded-lg border border-slate-200 bg-slate-50/50 p-4 hover:border-emerald-400 transition-all"
+                        className="cursor-pointer rounded-xl border border-slate-200 bg-slate-50/50 p-4.5 hover:border-emerald-400 hover:shadow-2xs transition-all"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-mono text-xs font-bold text-cyan-900">
+                          <span className="font-mono text-xs font-bold text-cyan-900 bg-cyan-50 border border-cyan-200/60 px-2 py-0.5 rounded-md">
                             {res.code}
                           </span>
-                          <span className="text-[11px] text-emerald-700 font-semibold">
-                            Supports Claim ✓
+                          <span className="text-[11px] text-emerald-700 font-bold flex items-center gap-1">
+                            Verified Result ✓
                           </span>
                         </div>
-                        <h5 className="mt-1 text-xs font-bold text-slate-900">
+                        <h5 className="mt-2 text-xs font-bold text-slate-900">
                           {res.title}
                         </h5>
                         <p className="mt-1 text-xs text-slate-600 leading-relaxed">
@@ -173,13 +175,14 @@ export const ClaimValidationView: React.FC = () => {
                         </p>
 
                         {res.metrics && (
-                          <div className="mt-3 flex flex-wrap gap-2">
+                          <div className="mt-3.5 flex flex-wrap gap-2">
                             {Object.entries(res.metrics).map(([k, v]) => (
                               <span
                                 key={k}
-                                className="rounded bg-white px-2 py-1 font-mono text-[10px] font-semibold text-slate-800 border border-slate-200 shadow-2xs"
+                                className="rounded-lg bg-white px-2.5 py-1 font-mono text-[10px] font-bold text-slate-800 border border-slate-200 shadow-2xs"
                               >
-                                {k}: {String(v)}
+                                <span className="text-slate-400 uppercase mr-1">{k}:</span>
+                                {String(v)}
                               </span>
                             ))}
                           </div>
@@ -192,7 +195,7 @@ export const ClaimValidationView: React.FC = () => {
 
               {/* Contradicting or Boundary Tests */}
               {activeAudit.contradictingResults.length > 0 && (
-                <div className="rounded-xl border border-rose-200 bg-rose-50/30 p-6 shadow-2xs">
+                <div className="rounded-2xl border border-rose-200 bg-rose-50/30 p-6 shadow-xs">
                   <div className="flex items-center gap-2 mb-4">
                     <XCircle className="h-4 w-4 text-rose-600" />
                     <h4 className="text-xs font-bold uppercase tracking-wider text-rose-900">
@@ -204,12 +207,12 @@ export const ClaimValidationView: React.FC = () => {
                     {activeAudit.contradictingResults.map((res) => (
                       <div
                         key={res.id}
-                        className="rounded-lg border border-rose-200 bg-white p-4"
+                        className="rounded-xl border border-rose-200 bg-white p-4 shadow-2xs"
                       >
-                        <span className="font-mono text-xs font-bold text-rose-900">
+                        <span className="font-mono text-xs font-bold text-rose-900 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
                           {res.code}
                         </span>
-                        <h5 className="mt-1 text-xs font-bold text-slate-900">
+                        <h5 className="mt-2 text-xs font-bold text-slate-900">
                           {res.title}
                         </h5>
                         <p className="mt-1 text-xs text-slate-600">
@@ -223,7 +226,7 @@ export const ClaimValidationView: React.FC = () => {
 
               {/* Citing Publications */}
               {activeAudit.citingPapers.length > 0 && (
-                <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-2xs">
+                <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs">
                   <div className="flex items-center gap-2 mb-4">
                     <BookOpen className="h-4 w-4 text-blue-600" />
                     <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">
@@ -231,15 +234,15 @@ export const ClaimValidationView: React.FC = () => {
                     </h4>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     {activeAudit.citingPapers.map((paper) => (
                       <div
                         key={paper.id}
                         onClick={() => selectEntity(paper.id, 'paper')}
-                        className="flex items-center justify-between rounded-lg border border-slate-200 p-3 hover:border-blue-400 cursor-pointer"
+                        className="flex items-center justify-between rounded-xl border border-slate-200 p-3.5 hover:border-blue-400 hover:bg-blue-50/20 cursor-pointer transition-all"
                       >
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-bold text-blue-800">
+                        <div className="flex items-center gap-2.5">
+                          <span className="font-mono text-xs font-bold text-blue-800 bg-blue-50 border border-blue-200/60 px-2 py-0.5 rounded-md">
                             {paper.code}
                           </span>
                           <span className="text-xs font-semibold text-slate-900">

@@ -4,6 +4,9 @@ import {
   GapEntity,
   HypothesisEntity,
   ExperimentEntity,
+  ResultEntity,
+  DecisionEntity,
+  ClaimEntity,
   RelationshipLink,
 } from '../types/research';
 
@@ -209,6 +212,74 @@ export const INITIAL_EXPERIMENTS: ExperimentEntity[] = [
       status: 'planned',
     },
     createdAt: '2026-01-23T08:00:00.000Z',
+  },
+];
+
+export const INITIAL_RESULTS: ResultEntity[] = [
+  {
+    id: 'r-001',
+    code: 'R-001',
+    type: 'result',
+    title: 'Baseline Accuracy and Latency Profile on Kvasir-Capsule',
+    summary:
+      'Full ResNet50 achieved 94.2% AUC with 48.2ms per-frame inference on RTX 4090, confirming baseline reference metrics for folded student architectures.',
+    metrics: {
+      auc: 0.942,
+      accuracy: 0.938,
+      latencyMs: 48.2,
+      parametersM: 25.6,
+      f1Score: 0.912,
+    },
+    experimentId: 'e-001',
+    status: 'valid',
+    createdAt: '2026-01-24T11:00:00.000Z',
+  },
+  {
+    id: 'r-002',
+    code: 'R-002',
+    type: 'result',
+    title: 'Layer-Folded ResNet18 Latency Speedup and Sensitivity',
+    summary:
+      'Folded 18-layer equivalent retained 93.1% AUC with inference latency reduced to 16.4ms (2.94x speedup), establishing viability for real-time telemetry.',
+    metrics: {
+      auc: 0.931,
+      accuracy: 0.924,
+      latencyMs: 16.4,
+      speedup: '2.94x',
+      parametersM: 8.9,
+    },
+    experimentId: 'e-002',
+    status: 'valid',
+    createdAt: '2026-01-25T14:30:00.000Z',
+  },
+];
+
+export const INITIAL_DECISIONS: DecisionEntity[] = [
+  {
+    id: 'd-001',
+    code: 'D-001',
+    type: 'decision',
+    title: 'Adopt Progressive Layer Folding as Core Compression Architecture',
+    outcome: 'accepted',
+    rationale:
+      'Layer folding delivers a 2.94x latency reduction while maintaining >93% AUC on Kvasir-Capsule, outperforming aggressive unstructured pruning.',
+    implications:
+      'All subsequent distillation pipelines will use the 18-layer folded backbone as primary student architecture.',
+    createdAt: '2026-01-26T09:00:00.000Z',
+  },
+];
+
+export const INITIAL_CLAIMS: ClaimEntity[] = [
+  {
+    id: 'c-001',
+    code: 'C-001',
+    type: 'claim',
+    title: 'Layer Folding Enables Real-Time WCE Lesion Detection with Preserved Diagnostic AUC',
+    statement:
+      'Progressive layer folding combined with cross-stage feature re-use reduces convolutional backbone inference latency below 20ms without significant loss in gastrointestinal abnormality classification.',
+    confidenceScore: 0.94,
+    status: 'verified',
+    createdAt: '2026-01-27T10:00:00.000Z',
   },
 ];
 
