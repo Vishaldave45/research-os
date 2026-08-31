@@ -9,7 +9,43 @@ from app.models.user import User
 from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectRead
 from app.services.project_service import ProjectService
 
+from app.api.deps import get_current_workspace_context
+from app.models.workspace import WorkspaceMembership
+
 router = APIRouter(tags=["Research Projects"])
+
+
+@router.get(
+    "/projects",
+    response_model=List[ProjectRead],
+    summary="List projects in current active workspace context",
+)
+async def list_active_workspace_projects(
+    ws_ctx: Annotated[tuple[uuid.UUID, WorkspaceMembership], Depends(get_current_workspace_context)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    status: Optional[str] = Query(None, pattern=r"^(active|completed|archived)$"),
+):
+    workspace_id, _ = ws_ctx
+    service = ProjectService(db)
+    return await service.list_projects(workspace_id, current_user.id, status)
+
+
+@router.post(
+    "/projects",
+    response_model=ProjectRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create project in current active workspace context",
+)
+async def create_active_workspace_project(
+    project_in: ProjectCreate,
+    ws_ctx: Annotated[tuple[uuid.UUID, WorkspaceMembership], Depends(get_current_workspace_context)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    workspace_id, _ = ws_ctx
+    service = ProjectService(db)
+    return await service.create_project(workspace_id, current_user.id, project_in)
 
 
 @router.get(
