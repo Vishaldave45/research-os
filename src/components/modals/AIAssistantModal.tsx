@@ -27,7 +27,17 @@ export const AIAssistantModal: React.FC = () => {
     claims,
     selectEntity,
     setViewMode,
+    getAllEntities,
   } = useResearchStore();
+
+  const handleNodeClick = (code: string) => {
+    const all = getAllEntities();
+    const found = all.find((e) => e.code === code || e.id === code);
+    if (found) {
+      selectEntity(found.id, found.type);
+      setAiModalOpen(false);
+    }
+  };
 
   const [prompt, setPrompt] = useState('');
   const [messages, setMessages] = useState<
@@ -176,12 +186,15 @@ export const AIAssistantModal: React.FC = () => {
                       Referenced Nodes:
                     </span>
                     {msg.referencedNodeCodes.map((c) => (
-                      <span
+                      <button
                         key={c}
-                        className="rounded-md bg-white px-2 py-0.5 font-mono text-[10px] font-bold text-indigo-700 border border-slate-200 shadow-2xs cursor-pointer hover:border-indigo-400"
+                        type="button"
+                        onClick={() => handleNodeClick(c)}
+                        title={`Inspect node ${c} in research canvas`}
+                        className="rounded-md bg-white hover:bg-indigo-50 px-2 py-0.5 font-mono text-[10px] font-bold text-indigo-700 border border-slate-200 hover:border-indigo-400 shadow-2xs cursor-pointer transition-colors"
                       >
-                        {c}
-                      </span>
+                        {c} ↗
+                      </button>
                     ))}
                   </div>
                 )}

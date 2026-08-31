@@ -8,6 +8,7 @@ import {
   DecisionEntity,
   ClaimEntity,
   RelationshipLink,
+  ResearchDataset,
 } from '../types/research';
 
 export const INITIAL_QUESTIONS: ResearchQuestionEntity[] = [
@@ -375,3 +376,21 @@ export const INITIAL_RELATIONSHIPS: RelationshipLink[] = [
     createdAt: '2026-01-22T08:00:00.000Z',
   },
 ];
+
+export const canonicalWceDataset: ResearchDataset = {
+  workspace: {
+    id: 'ws-canonical-wce',
+    name: 'DepthReduce Lab',
+    description: 'Capsule Endoscopy Edge Vision Transformer Compression',
+    createdAt: '2026-01-15T09:00:00.000Z',
+  },
+  questions: INITIAL_QUESTIONS,
+  papers: INITIAL_PAPERS,
+  gaps: INITIAL_GAPS,
+  hypotheses: INITIAL_HYPOTHESES,
+  experiments: INITIAL_EXPERIMENTS,
+  results: INITIAL_RESULTS,
+  decisions: INITIAL_DECISIONS,
+  claims: INITIAL_CLAIMS,
+  relationships: INITIAL_RELATIONSHIPS,
+};

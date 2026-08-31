@@ -552,7 +552,7 @@ class ApiClient {
     const entities = this.getEntities();
     const relationships = this.getRelationships();
 
-    // Reset/seed canonical dataset
+    // Reset/seed canonical dataset or domain template
     if (path === '/seed/wce' || path === '/seed') {
       const initialEntities = {
         questions: INITIAL_QUESTIONS,
@@ -567,6 +567,24 @@ class ApiClient {
       this.saveEntities(initialEntities);
       this.saveRelationships(INITIAL_RELATIONSHIPS);
       return { success: true, message: 'Canonical WCE dataset seeded successfully.' };
+    }
+
+    if (path === '/seed/template' || path === '/seed/custom') {
+      if (body?.dataset) {
+        const d = body.dataset;
+        this.saveEntities({
+          questions: d.questions || [],
+          papers: d.papers || [],
+          gaps: d.gaps || [],
+          hypotheses: d.hypotheses || [],
+          experiments: d.experiments || [],
+          results: d.results || [],
+          decisions: d.decisions || [],
+          claims: d.claims || [],
+        });
+        this.saveRelationships(d.relationships || []);
+        return { success: true, message: 'Domain template dataset seeded successfully.' };
+      }
     }
 
     // Relationships

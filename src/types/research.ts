@@ -133,6 +133,20 @@ export interface Workspace {
   createdAt: string;
   slug?: string;
   updatedAt?: string;
+  primaryQuestion?: string;
+}
+
+export interface ResearchDataset {
+  workspace?: Workspace;
+  questions: ResearchQuestionEntity[];
+  papers: PaperEntity[];
+  gaps: GapEntity[];
+  hypotheses: HypothesisEntity[];
+  experiments: ExperimentEntity[];
+  results: ResultEntity[];
+  decisions: DecisionEntity[];
+  claims: ClaimEntity[];
+  relationships: RelationshipLink[];
 }
 
 export interface ProjectSummary {

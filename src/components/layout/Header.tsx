@@ -18,6 +18,7 @@ import {
   Check,
   Users,
   FolderKanban,
+  DownloadCloud,
 } from 'lucide-react';
 import { useResearchStore } from '../../store/useResearchStore';
 import { useAuthStore } from '../../features/auth/store/authStore';
@@ -26,6 +27,7 @@ import { useProjectStore } from '../../features/projects/store/projectStore';
 import { CreateWorkspaceModal } from '../../features/workspaces/components/CreateWorkspaceModal';
 import { CreateProjectModal } from '../../features/projects/components/CreateProjectModal';
 import { WorkspaceMembersModal } from '../modals/WorkspaceMembersModal';
+import { ExportBundleModal } from '../modals/ExportBundleModal';
 import { ViewMode } from '../../types/research';
 
 export const Header: React.FC = () => {
@@ -61,6 +63,7 @@ export const Header: React.FC = () => {
   const [isCreateWorkspaceOpen, setIsCreateWorkspaceOpen] = useState(false);
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
+  const [isExportBundleOpen, setIsExportBundleOpen] = useState(false);
 
   const workspaceRef = useRef<HTMLDivElement>(null);
   const projectRef = useRef<HTMLDivElement>(null);
@@ -329,6 +332,16 @@ export const Header: React.FC = () => {
           <span className="hidden sm:inline">New Node</span>
         </button>
 
+        {/* Export Provenance Bundle */}
+        <button
+          onClick={() => setIsExportBundleOpen(true)}
+          title="Export Reproducibility Bundle, LaTeX BibTeX & Graph"
+          className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-2.5 lg:px-3 py-1.5 text-xs font-semibold text-slate-700 transition cursor-pointer shadow-2xs"
+        >
+          <DownloadCloud className="h-3.5 w-3.5 text-indigo-600" />
+          <span className="hidden xl:inline">Export Bundle</span>
+        </button>
+
         {/* Sync / Reset */}
         <button
           onClick={() => {
@@ -413,6 +426,11 @@ export const Header: React.FC = () => {
       <WorkspaceMembersModal
         isOpen={isMembersModalOpen}
         onClose={() => setIsMembersModalOpen(false)}
+      />
+
+      <ExportBundleModal
+        isOpen={isExportBundleOpen}
+        onClose={() => setIsExportBundleOpen(false)}
       />
     </header>
   );

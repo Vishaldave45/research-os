@@ -18,6 +18,7 @@ import {
   DecisionEntity,
   ClaimEntity,
 } from '../types/research';
+import { DomainTemplate } from '../data/domainTemplates';
 import { entitiesApi } from '../services/api/entities.api';
 import { apiClient } from '../services/api/client';
 import { useAuthStore } from '../features/auth/store/authStore';
@@ -108,6 +109,7 @@ interface ResearchStoreState {
 
   // Reset / Seed
   resetToCanonicalDataset: () => Promise<void>;
+  loadDomainTemplate: (template: DomainTemplate) => Promise<void>;
 
   // Selectors / Helpers
   getAllEntities: () => ResearchEntity[];
@@ -597,6 +599,27 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
         await get().syncFromBackend();
       } catch (err: any) {
         const msg = err.message || 'Failed to seed canonical dataset into database.';
+        set({ error: msg });
+      } finally {
+        set({ isSyncing: false });
+      }
+    },
+
+    loadDomainTemplate: async (template: DomainTemplate) => {
+      set({ isSyncing: true, error: null });
+      try {
+        await apiClient.post('/seed/template', { dataset: template.dataset });
+        if (template.dataset.workspace) {
+          set({
+            workspace: {
+              ...template.dataset.workspace,
+              createdAt: new Date().toISOString(),
+            },
+          });
+        }
+        await get().syncFromBackend();
+      } catch (err: any) {
+        const msg = err.message || 'Failed to load domain template into database.';
         set({ error: msg });
       } finally {
         set({ isSyncing: false });
