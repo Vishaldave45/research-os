@@ -40,17 +40,22 @@ async def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> User:
-    """Validate bearer token strictly; raise 401 UNAUTHORIZED if missing, invalid, or expired."""
+    """Validate bearer token or HttpOnly cookie strictly; raise 401 UNAUTHORIZED if missing, invalid, or expired."""
     user_repo = UserRepository(db)
 
-    if not credentials or not credentials.credentials:
+    token = None
+    if credentials and credentials.credentials:
+        token = credentials.credentials
+    elif "access_token" in request.cookies:
+        token = request.cookies["access_token"]
+
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication credentials were not provided.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    token = credentials.credentials
     payload = decode_jwt_token(token)
     if not payload or payload.get("type") != "access" or not payload.get("sub"):
         raise HTTPException(

@@ -1,6 +1,6 @@
 import uuid
 from typing import Any, Dict
-from sqlalchemy import String, Text, Float, ForeignKey
+from sqlalchemy import String, Text, Float, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import TimeStampedUUIDModel
@@ -8,6 +8,10 @@ from app.models.base import TimeStampedUUIDModel
 
 class Claim(TimeStampedUUIDModel):
     __tablename__ = "claims"
+    __table_args__ = (
+        Index("ix_claims_ws_created", "workspace_id", "created_at"),
+        Index("ix_claims_ws_status", "workspace_id", "status"),
+    )
 
     workspace_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="CASCADE"), index=True, nullable=False)
     code: Mapped[str] = mapped_column(String(32), nullable=False)  # e.g., 'C-001'

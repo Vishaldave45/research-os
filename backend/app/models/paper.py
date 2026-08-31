@@ -1,6 +1,6 @@
 import uuid
 from typing import Any, Dict, List
-from sqlalchemy import String, Text, Integer, ForeignKey
+from sqlalchemy import String, Text, Integer, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
 from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import TimeStampedUUIDModel
@@ -8,6 +8,10 @@ from app.models.base import TimeStampedUUIDModel
 
 class Paper(TimeStampedUUIDModel):
     __tablename__ = "papers"
+    __table_args__ = (
+        Index("ix_papers_ws_created", "workspace_id", "created_at"),
+        Index("ix_papers_ws_year", "workspace_id", "year"),
+    )
 
     workspace_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="CASCADE"), index=True, nullable=False)
     code: Mapped[str] = mapped_column(String(32), nullable=False)  # e.g., 'P-001'

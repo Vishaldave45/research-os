@@ -1,6 +1,6 @@
 import uuid
 from typing import Optional
-from sqlalchemy import String, Text, ForeignKey
+from sqlalchemy import String, Text, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import TimeStampedUUIDModel
@@ -8,6 +8,10 @@ from app.models.base import TimeStampedUUIDModel
 
 class Project(TimeStampedUUIDModel):
     __tablename__ = "projects"
+    __table_args__ = (
+        Index("ix_projects_ws_created", "workspace_id", "created_at"),
+        Index("ix_projects_ws_status", "workspace_id", "status"),
+    )
 
     workspace_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
