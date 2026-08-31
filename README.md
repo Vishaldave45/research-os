@@ -31,24 +31,28 @@ Scientific and deep-tech engineering workflows frequently suffer from **provenan
 
 ### Key Guarantees:
 1. **Single Source of Truth**: All data persists in PostgreSQL via FastAPI REST endpoints and synchronizes to the frontend Zustand store. No in-memory fixture substitution or fake DB fallbacks.
-2. **Multi-Tenant Workspace & Project Isolation**: Research workspaces and projects are isolated at the database query level with strict JWT authentication and role-based permissions (`Owner`, `Admin`, `Researcher`, `Viewer`).
-3. **Deterministic Provenance**: Backward trace algorithms recursively traverse the directed reasoning DAG from any Decision or Claim back to the motivating literature.
+2. **Multi-Tenant Workspace & Domain Isolation**: Research workspaces, domains, and projects are isolated at the database query level with strict JWT authentication and role-based permissions (`Owner`, `Admin`, `Researcher`, `Viewer`).
+3. **Deterministic Provenance**: Backward trace algorithms recursively traverse the directed reasoning DAG from any Decision or Claim back to the motivating literature and evidence items.
 4. **Scientific Integrity**: Empirical metrics and execution states reflect actual benchmark outcomes. Unexecuted experiments remain strictly in the `planned` state.
 
 ---
 
-## 🏛️ Research Ontology (8 Archetypes + Semantic Relations)
+## 🏛️ Research Ontology (10 Archetypes + Semantic Relations)
 
 ```text
-[ Question ] ──(informs)──► [ Paper ] ──(motivates)──► [ Literature Gap ]
-                                                              │
-                                                         (motivates)
-                                                              ▼
-[ Decision ] ◄──(supports)── [ Result ] ◄──(tests)── [ Hypothesis ]
-     │                              ▲
-(derived_from)                      │ (supports / refutes)
-     ▼                              │
-[ Scientific Claim ] ───────────────┘
+[ Question ] ──(informs)──► [ Paper ] ──(produces)──► [ Evidence Item ]
+     │                                                        │
+ (informs)                                               (motivates)
+     ▼                                                        ▼
+[ Dataset / Model ] ──(used_by)──► [ Hypothesis ] ◄──(addresses)── [ Literature Gap ]
+                                          │
+                                       (tests)
+                                          ▼
+[ Decision ] ◄──(supports)────── [ Experiment ] ──(produces)──► [ Result ]
+     │                                                             │
+(derived_from)                                                 (supports)
+     ▼                                                             ▼
+[ Scientific Claim ] ◄─────────────────────────────────────────────┘
 ```
 
 ### 1. Entity Archetypes
@@ -56,6 +60,9 @@ Scientific and deep-tech engineering workflows frequently suffer from **provenan
 | :--- | :--- | :--- | :--- |
 | ❓ | **Research Question** | `Q-###` | Clinical or engineering inquiry, domain scope, priority |
 | 📚 | **Literature Paper** | `P-###` | Peer-reviewed publications, authors, venue, year, findings, limitations |
+| 🔍 | **Evidence Item** | `EV-###` | First-class empirical or theoretical evidence, strength, citation DOIs, confidence |
+| 💾 | **Dataset** | `slug` | Modality (image, tabular, text), preprocessing specs, train/val/test split configurations |
+| 🤖 | **Model Architecture** | `slug` | Deep learning backbone specs, framework, checkpoint URLs, parameters, commit hash |
 | ⚠️ | **Literature Gap** | `G-###` | Identified frontier blindspots, impact level, unaddressed constraints |
 | 💡 | **Hypothesis** | `H-###` | Testable, falsifiable conjectures with formal rationale & confidence score |
 | 🧪 | **Experiment** | `E-###` | Concrete protocol, hardware platform, batch configurations, parameters |
@@ -64,64 +71,68 @@ Scientific and deep-tech engineering workflows frequently suffer from **provenan
 | 🛡️ | **Scientific Claim** | `C-###` | Grounded assertions with computed evidentiary confidence scores (0–100%) |
 
 ### 2. Directed Relationship Ontology
-- `informs`: Theoretical or domain knowledge provides context for an inquiry or gap.
-- `motivates`: Literature gap or clinical requirement prompts a new hypothesis.
+- `informs`: Theoretical or domain knowledge provides context for an inquiry, gap, or dataset.
+- `motivates`: Literature gap, evidence item, or clinical requirement prompts a new hypothesis.
 - `addresses`: Novel method or hypothesis directly solves a question or gap.
 - `tests`: Benchmark experiment executes validation protocol on a hypothesis.
 - `supports`: Empirical result validates or confirms a hypothesis, decision, or claim.
 - `refutes`: Empirical result falsifies or exposes failure modes of a hypothesis or claim.
 - `cites`: Publication cites or builds upon antecedent literature.
 - `derived_from`: High-level claim or production decision originates from upstream findings.
+- `produces`: Experiment execution yields empirical results or raw evidence items.
 
 ---
 
-## ⚡ Key Modules & Interactive Interfaces
+## ⚡ Comprehensive Feature Suites (Phases 1–6)
 
-### 1. 🏢 Multi-Workspace & Research Project Switcher
-- Instant dropdown switching between research labs (`WorkspaceSwitcher`) and projects (`ProjectSwitcher`).
-- Dedicated **Workspace Members Modal** allowing lab owners to invite colleagues and assign roles.
+### 1. 🏢 Multi-Tenant Workspace & Domain Hierarchy (Phase 1 & 2)
+- **Hierarchy:** `Workspace ➔ Research Domain ➔ Projects ➔ Research Graph`.
+- **Domain Categorization:** Tag and isolate projects by discipline (e.g. *Medical AI*, *NLP / RAG*, *Robotics*).
+- **Role-Based Access Control:** Invite researchers with fine-grained roles (`Owner`, `Admin`, `Researcher`, `Viewer`).
 
 ### 2. 🌌 Spatial Graph Canvas (`@xyflow/react`)
-- **Interactive Custom Nodes**: Archetype-specific colorways, metric chips, status indicators, and connection handles.
-- **Automated Pipeline Layout**: Repositions nodes left-to-right following the canonical research lifecycle:
-  `Questions ➔ Literature ➔ Gaps ➔ Hypotheses ➔ Experiments ➔ Results ➔ Decisions ➔ Claims`.
-- **Semantic Edge Styling**: Color-coded edges (`#10b981` supports, `#ef4444` refutes, `#6366f1` motivates/tests) with animated directional flow.
-- **DAG Cycle Detection**: Real-time BFS cycle prevention protecting knowledge graph integrity.
+- **Interactive Custom Nodes:** Archetype-specific colorways, metric chips, status indicators, and connection handles.
+- **Automated Pipeline Layout:** Repositions nodes left-to-right following the canonical research lifecycle:
+  `Questions ➔ Literature/Evidence ➔ Gaps ➔ Hypotheses ➔ Models/Datasets ➔ Experiments ➔ Results ➔ Decisions ➔ Claims`.
+- **DAG Cycle Detection:** Real-time BFS cycle prevention protecting knowledge graph integrity.
 
-### 3. 📋 Literature Matrix View
-- Side-by-side comparative analysis of peer-reviewed papers.
-- Quantitative synthesis across methods, hardware testbeds, power envelopes, compression benchmarks, key findings, and documented limitations.
+### 3. 💾 Dataset & Model Registries (Phase 3)
+- **Dataset Registry:** Tracks curated research datasets, sample counts, size in bytes, licenses, and preprocessing/split specifications.
+- **Model Registry:** Logs model architectures, frameworks (`pytorch`, `tensorflow`, `jax`, `onnx`), parameter counts, checkpoint URLs, and code commit provenance.
 
-### 4. 🔍 Backward Traceability Engine
-- Deterministic backward provenance traversal from any Decision (e.g. `D-001`) through Results, Experiments, Hypotheses, and Literature.
-- Visual chain inspection, grounding status, and lineage path generation.
+### 4. 🔍 Global Search & Research Timeline (Phase 3)
+- **Cross-Entity Search (`/api/v1/search`):** Unified query matching titles, descriptions, and codes across all 10 entity archetypes with type-breakdown statistics.
+- **Chronological Timeline (`/api/v1/timeline`):** Full research memory replay detailing every event (`inquired`, `reviewed`, `recorded`, `hypothesized`, `executed`, `quantified`, `decided`, `claimed`) along with upstream and downstream graph connections.
 
-### 5. 🛡️ Evidentiary Claim Auditor
-- **Confidence Scoring**: Dynamically computed from empirical trials and replication strength.
-- **Direct Backing Tracing**: Highlights which empirical metrics validate the assertion.
-- **Constraint Violation Alerts**: Warns if thermal thresholds (e.g. capsule shell >41.5°C) or latency limits are breached.
+### 5. 💬 CollaborationOS (Phase 4)
+- **Contextual Discussions (`/api/v1/collaboration/comments`):** Threaded peer comments on any research entity with `@mentions` and resolution states.
+- **Peer Review Protocol (`/api/v1/collaboration/reviews`):** Formal artifact reviews with verdicts (`approved`, `changes_requested`, `rejected`), confidence ratings, and critique commentary.
+- **Immutable Audit Trails (`/api/v1/collaboration/audit-logs`):** Granular audit log capturing before/after JSON states of all entity mutations.
 
-### 6. 📖 End-to-End Evidence Narrative
-- Chronological, step-by-step audit trail from the initial clinical question to final hardware firmware decisions.
+### 6. 📄 PublicationOS — Automated Manuscript Export (Phase 5)
+- **Scientific Paper Synthesis (`/api/v1/manuscripts/export`):** Compiles the research graph into peer-reviewed sections (Introduction, Related Work, Methodology, Results, Grounded Claims).
+- **LaTeX Source Export (`.tex`):** Standard IEEEtran-formatted LaTeX documents ready for compilation.
+- **BibTeX Library (`.bib`):** Automatically compiled citation keys and DOI metadata for all literature referenced in the graph.
+- **Evidence Traceability Matrix:** Structured audit table linking verified claims directly to backing empirical results and experiments.
 
-### 7. 🗃️ Entity Registry & CSV Export
-- Searchable, filterable tabular registry with instant sorting, type classification, and one-click CSV export.
-
-### 8. ⌨️ Global Command Palette (`Cmd+K` / `Ctrl+K`)
-- Instant fuzzy navigation to any entity code (e.g. `H-001`, `P-003`, `D-001`, `C-001`) or workspace view mode.
+### 7. 🧠 Synthesis AI Engine (Phase 6)
+- **Automated Gap Discovery (`/api/v1/synthesis/discover-gaps`):** Intelligent multi-paper contrastive analysis proposing frontier research gaps.
+- **Hypothesis Generation (`/api/v1/synthesis/generate-hypotheses`):** Derives falsifiable hypotheses with rationale and experimental protocol blueprints.
+- **Grounded Claim Validation (`/api/v1/synthesis/audit-claim`):** Audits assertions against empirical results and evidence items to detect contradictions and compute grounding confidence.
+- **One-Click Graph Insertion (`/api/v1/synthesis/accept-proposal`):** Instantly inserts AI proposals into the live PostgreSQL DAG reasoning graph.
 
 ---
 
-## 🛠️ Architecture & Project Structure
+## 🛠️ Architecture & Codebase Structure
 
 ```text
 researchos/
 ├── backend/                       # Canonical FastAPI + PostgreSQL Backend
 │   ├── app/
-│   │   ├── api/v1/                # REST API Routers (auth, workspaces, projects, questions, papers, gaps, hypotheses, experiments, results, decisions, claims, relationships, graph, synthesis, seed)
-│   │   ├── models/                # SQLAlchemy 2.0 Async Models (14 tables with CASCADE/RESTRICT constraints)
+│   │   ├── api/v1/                # REST API Routers (auth, workspaces, domains, projects, questions, papers, evidence, datasets, models, gaps, hypotheses, experiments, results, decisions, claims, relationships, graph, search, timeline, collaboration, manuscript, synthesis, seed)
+│   │   ├── models/                # SQLAlchemy 2.0 Async Models (19 tables with CASCADE/RESTRICT constraints)
 │   │   ├── schemas/               # Pydantic v2 Request/Response Schemas with robust ORM validators
-│   │   ├── services/              # Domain Services (auth, project, graph traversal, lineage, audit, seed)
+│   │   ├── services/              # Domain Services (auth, domain, evidence, dataset, model, search, timeline, collaboration, manuscript, synthesis AI, graph, seed)
 │   │   ├── repositories/          # Async database repository layer
 │   │   ├── core/                  # Database engine (NullPool), auth security, config validation
 │   │   └── main.py                # FastAPI app initialization, middleware & exception handlers
@@ -139,14 +150,14 @@ researchos/
 │   ├── components/
 │   │   ├── canvas/                # @xyflow/react canvas, custom nodes, edges, pipeline layout
 │   │   ├── inspector/             # Precision node inspector drawer
-│   │   ├── synthesis/             # Literature matrix, gap discovery, claims auditor, evidence chain
+│   │   ├── synthesis/             # Literature matrix, gap discovery, claims auditor, evidence chain, manuscript composer
 │   │   ├── table/                 # Tabular entity registry & CSV export
 │   │   ├── layout/                # App header with Workspace/Project Switchers
 │   │   └── modals/                # Create entity, link modal, command palette, trace modal, members modal
 │   ├── App.tsx                    # Root application component
 │   └── main.tsx                   # React DOM bootstrap
 │
-├── docker-compose.yml             # Full-stack composition (PostgreSQL 15 + FastAPI + Vite)
+├── docker-compose.yml             # Full-stack composition (PostgreSQL 16 + FastAPI + Vite)
 ├── Dockerfile                     # Multi-stage production container build
 ├── package.json                   # Web application manifest & scripts
 ├── tsconfig.json                  # Strict TypeScript configuration
@@ -181,7 +192,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 npm install
 npm run dev
 
-# 4. Open http://localhost:3000 in your browser
+# 4. Open http://localhost:5173 in your browser
 ```
 
 ### Option B: Full-Stack Docker Compose
@@ -191,7 +202,7 @@ npm run dev
 docker compose up --build
 
 # Access endpoints:
-# - Frontend UI: http://localhost:3000
+# - Frontend UI: http://localhost:5173
 # - FastAPI Swagger Docs: http://localhost:8000/docs
 # - FastAPI Health: http://localhost:8000/health
 # - PostgreSQL: localhost:5432
@@ -202,18 +213,13 @@ docker compose up --build
 ## 🧪 Verification & Test Suite
 
 ```bash
-# 1. Run all 31 backend tests against PostgreSQL
+# 1. Run all backend tests against live PostgreSQL
 cd backend
-.venv/bin/pytest -v
+source .venv/bin/activate
+pytest -v
 
-# 2. Run frontend type checking & lint
-npm run lint
-
-# 3. Build frontend production bundle
+# 2. Run frontend type checking & build
 npm run build
-
-# 4. Validate Docker Compose configuration
-docker compose config
 ```
 
 ---
