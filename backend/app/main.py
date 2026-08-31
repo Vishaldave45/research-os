@@ -218,8 +218,7 @@ def create_application() -> FastAPI:
                 content={"status": "not_ready", "error": "Database connection failed"},
             )
 
-    # OAuth popup HTML callback handlers
-    @application.get(["/auth/callback", "/auth/callback/", "/api/auth/callback", "/api/v1/auth/callback"], response_class=HTMLResponse, tags=["Authentication"])
+    # OAuth popup HTML callback handler
     async def oauth_popup_callback_page(request: Request):
         """Returns minimal HTML script that communicates auth code or status to parent opener and closes."""
         return HTMLResponse(
@@ -301,6 +300,11 @@ def create_application() -> FastAPI:
   </body>
 </html>"""
         )
+
+    # Register the OAuth callback handler on multiple paths
+    paths = ["/auth/callback", "/auth/callback/", "/api/auth/callback", "/api/v1/auth/callback"]
+    for path in paths:
+        application.add_api_route(path, oauth_popup_callback_page, methods=["GET"], response_class=HTMLResponse, tags=["Authentication"])
 
     return application
 
