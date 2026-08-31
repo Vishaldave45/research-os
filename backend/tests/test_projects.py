@@ -32,7 +32,7 @@ async def test_project_crud_and_workspace_isolation():
             f"/api/v1/workspaces/{ws_id_a}/projects",
             headers=headers_a,
             json={
-                "name": "WCE Model Compression",
+                "name": "Endoscopic Model Pruning",
                 "research_area": "Medical AI",
                 "description": "Depth-reduced CNN models for wireless capsule endoscopy",
                 "status": "active",
@@ -40,8 +40,8 @@ async def test_project_crud_and_workspace_isolation():
         )
         assert create_p_res.status_code == 201
         p_data = create_p_res.json()
-        assert p_data["name"] == "WCE Model Compression"
-        assert p_data["slug"] == "wce-model-compression"
+        assert p_data["name"] == "Endoscopic Model Pruning"
+        assert p_data["slug"] == "endoscopic-model-pruning"
         assert p_data["research_area"] == "Medical AI"
         project_id = p_data["id"]
 
@@ -55,7 +55,7 @@ async def test_project_crud_and_workspace_isolation():
         # 5. Get project by ID
         get_p_res = await client.get(f"/api/v1/projects/{project_id}", headers=headers_a)
         assert get_p_res.status_code == 200
-        assert get_p_res.json()["name"] == "WCE Model Compression"
+        assert get_p_res.json()["name"] == "Endoscopic Model Pruning"
 
         # 6. Update project
         up_res = await client.put(

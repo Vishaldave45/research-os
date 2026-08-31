@@ -255,6 +255,12 @@ class AuthService:
                         role="owner",
                     )
                 )
+                try:
+                    from app.services.seed_service import SeedService
+                    seed_service = SeedService(self.db)
+                    await seed_service.seed_wce_dataset(created_ws.id, user.id)
+                except Exception:
+                    pass
 
         if not user.is_active:
             raise HTTPException(
@@ -311,6 +317,13 @@ class AuthService:
                     role="owner",
                 )
             )
+            # Auto-seed canonical research graph for immediate productive work
+            try:
+                from app.services.seed_service import SeedService
+                seed_service = SeedService(self.db)
+                await seed_service.seed_wce_dataset(created_ws.id, created_user.id)
+            except Exception:
+                pass
         
         # Issue initial token pair
         tokens = await self._issue_token_pair(created_user.id)

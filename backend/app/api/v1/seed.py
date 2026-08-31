@@ -13,6 +13,27 @@ router = APIRouter(prefix="/seed", tags=["Seed Datasets"])
 
 
 @router.post(
+    "/wce",
+    response_model=Dict[str, Any],
+    summary="Seed Canonical WCE Research Project into User's Active Workspace",
+)
+async def seed_wce_default(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    ws_service = WorkspaceService(db)
+    workspaces = await ws_service.list_user_workspaces(current_user.id)
+    if not workspaces:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No workspace found for user.",
+        )
+    target_ws_id = workspaces[0].id
+    seed_service = SeedService(db)
+    return await seed_service.seed_wce_dataset(target_ws_id, current_user.id)
+
+
+@router.post(
     "/wce/{workspace_id}",
     response_model=Dict[str, Any],
     summary="Seed Wireless Capsule Endoscopy (WCE) Research Project",
