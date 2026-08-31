@@ -24,9 +24,14 @@ import {
   Lightbulb,
   Sliders,
   TrendingUp,
+  MessageSquare,
+  CheckCheck,
+  History,
+  Send,
 } from 'lucide-react';
 import { useResearchStore } from '../../store/useResearchStore';
 import { EntityType, ResearchEntity } from '../../types/research';
+import { entitiesApi } from '../../services/api/entities.api';
 
 export const NodeInspector: React.FC = () => {
   const {
@@ -49,10 +54,41 @@ export const NodeInspector: React.FC = () => {
   const [editTitle, setEditTitle] = useState('');
   const [editBody, setEditBody] = useState('');
   const [editStatus, setEditStatus] = useState('');
+  const [activeTab, setActiveTab] = useState<'details' | 'comments' | 'reviews' | 'audit'>('details');
+
+  const [comments, setComments] = useState<any[]>([]);
+  const [newCommentText, setNewCommentText] = useState('');
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [loadingCollab, setLoadingCollab] = useState(false);
 
   const entity = selectedEntityId ? getEntityById(selectedEntityId) : null;
   const upstream = selectedEntityId ? getUpstreamEntities(selectedEntityId) : [];
   const downstream = selectedEntityId ? getDownstreamEntities(selectedEntityId) : [];
+
+  React.useEffect(() => {
+    if (entity) {
+      if (activeTab === 'comments') {
+        setLoadingCollab(true);
+        entitiesApi.listComments(entity.type, entity.id)
+          .then(setComments)
+          .catch(() => setComments([]))
+          .finally(() => setLoadingCollab(false));
+      } else if (activeTab === 'reviews') {
+        setLoadingCollab(true);
+        entitiesApi.listReviews(entity.type, entity.id)
+          .then(setReviews)
+          .catch(() => setReviews([]))
+          .finally(() => setLoadingCollab(false));
+      } else if (activeTab === 'audit') {
+        setLoadingCollab(true);
+        entitiesApi.listAuditLogs(entity.type)
+          .then(setAuditLogs)
+          .catch(() => setAuditLogs([]))
+          .finally(() => setLoadingCollab(false));
+      }
+    }
+  }, [entity?.id, entity?.type, activeTab]);
 
   if (!isInspectorOpen || !entity) {
     return null;
@@ -175,7 +211,237 @@ export const NodeInspector: React.FC = () => {
         </button>
       </div>
 
+      {/* Tab Navigation */}
+      <div className="flex border-b border-slate-200/90 bg-slate-50/40 px-3">
+        <button
+          onClick={() => setActiveTab('details')}
+          className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === 'details'
+              ? 'border-indigo-600 text-indigo-600 bg-white shadow-2xs'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <span>Details</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('comments')}
+          className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === 'comments'
+              ? 'border-indigo-600 text-indigo-600 bg-white shadow-2xs'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <MessageSquare className="h-3.5 w-3.5" />
+          <span>Comments</span>
+          {comments.length > 0 && (
+            <span className="rounded-full bg-slate-200 px-1.5 py-0.2 text-[10px] text-slate-700 font-bold">
+              {comments.length}
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('reviews')}
+          className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === 'reviews'
+              ? 'border-indigo-600 text-indigo-600 bg-white shadow-2xs'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <CheckCheck className="h-3.5 w-3.5" />
+          <span>Reviews</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('audit')}
+          className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === 'audit'
+              ? 'border-indigo-600 text-indigo-600 bg-white shadow-2xs'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <History className="h-3.5 w-3.5" />
+          <span>Audit</span>
+        </button>
+      </div>
+
+      {/* Tab Contents */}
+      {activeTab === 'comments' && (
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Threaded Discussions</h4>
+            <span className="text-[11px] text-slate-400">PostgreSQL Persisted</span>
+          </div>
+
+          <div className="space-y-3">
+            {loadingCollab ? (
+              <p className="text-xs text-slate-400">Loading comments...</p>
+            ) : comments.length === 0 ? (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
+                <p className="text-xs text-slate-500">No comments yet on this node.</p>
+                <p className="text-[11px] text-slate-400 mt-1">Start a peer discussion below.</p>
+              </div>
+            ) : (
+              comments.map((c) => (
+                <div key={c.id} className="rounded-xl border border-slate-200 bg-white p-3 shadow-2xs space-y-1">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="font-bold text-slate-800">{c.author_name || 'Researcher'}</span>
+                    <span className="text-slate-400">{new Date(c.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <p className="text-xs text-slate-700">{c.content}</p>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Comment Input */}
+          <div className="pt-2">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Write a comment or @mention..."
+                value={newCommentText}
+                onChange={(e) => setNewCommentText(e.target.value)}
+                onKeyDown={async (e) => {
+                  if (e.key === 'Enter' && newCommentText.trim()) {
+                    try {
+                      const created = await entitiesApi.createComment({
+                        entity_type: entity.type,
+                        entity_id: entity.id,
+                        content: newCommentText.trim(),
+                      });
+                      setComments([...comments, created]);
+                      setNewCommentText('');
+                    } catch {}
+                  }
+                }}
+                className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-xs focus:border-indigo-500 focus:outline-hidden"
+              />
+              <button
+                onClick={async () => {
+                  if (newCommentText.trim()) {
+                    try {
+                      const created = await entitiesApi.createComment({
+                        entity_type: entity.type,
+                        entity_id: entity.id,
+                        content: newCommentText.trim(),
+                      });
+                      setComments([...comments, created]);
+                      setNewCommentText('');
+                    } catch {}
+                  }
+                }}
+                className="rounded-xl bg-indigo-600 px-3 py-2 text-white hover:bg-indigo-700 cursor-pointer shadow-2xs"
+              >
+                <Send className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'reviews' && (
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Peer Reviews & Verdicts</h4>
+          </div>
+
+          {reviews.length === 0 ? (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
+              <p className="text-xs text-slate-500">No formal peer reviews filed.</p>
+              <p className="text-[11px] text-slate-400 mt-1">Submit a review below to verify scientific validity.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {reviews.map((r) => (
+                <div key={r.id} className="rounded-xl border border-slate-200 bg-white p-3 shadow-2xs space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                      r.verdict === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                    }`}>
+                      {r.verdict}
+                    </span>
+                    <span className="text-[11px] text-slate-400">{new Date(r.created_at).toLocaleDateString()}</span>
+                  </div>
+                  {r.comments && <p className="text-xs text-slate-700">{r.comments}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Quick Review Submission */}
+          <div className="border-t border-slate-200 pt-3 space-y-2">
+            <label className="block text-xs font-bold text-slate-700">Submit Verification Verdict</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={async () => {
+                  try {
+                    const rev = await entitiesApi.createReview({
+                      entity_type: entity.type,
+                      entity_id: entity.id,
+                      verdict: 'approved',
+                      comments: 'Verified methodology and findings against empirical baseline.',
+                      confidence_rating: 5,
+                    });
+                    setReviews([...reviews, rev]);
+                  } catch {}
+                }}
+                className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-100 cursor-pointer text-center"
+              >
+                Approve Artifact
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const rev = await entitiesApi.createReview({
+                      entity_type: entity.type,
+                      entity_id: entity.id,
+                      verdict: 'changes_requested',
+                      comments: 'Request additional replication trials across distinct hardware platforms.',
+                      confidence_rating: 3,
+                    });
+                    setReviews([...reviews, rev]);
+                  } catch {}
+                }}
+                className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700 hover:bg-amber-100 cursor-pointer text-center"
+              >
+                Request Revisions
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'audit' && (
+        <div className="flex-1 overflow-y-auto p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Immutable Audit Trail</h4>
+            <span className="text-[11px] text-slate-400">PostgreSQL</span>
+          </div>
+
+          {auditLogs.length === 0 ? (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
+              <p className="text-xs text-slate-500">No audit events recorded yet.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {auditLogs.map((log) => (
+                <div key={log.id} className="rounded-xl border border-slate-200 bg-white p-2.5 text-xs shadow-2xs space-y-1">
+                  <div className="flex items-center justify-between font-mono text-[10px] text-slate-500">
+                    <span className="font-bold text-indigo-600 uppercase">{log.action}</span>
+                    <span>{new Date(log.created_at).toLocaleTimeString()}</span>
+                  </div>
+                  <p className="text-slate-700 font-medium truncate">{log.entity_type} {log.entity_id}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Scrollable Content */}
+      {activeTab === 'details' && (
       <div className="flex-1 overflow-y-auto p-5 space-y-6">
         {/* Title and Core Statement */}
         <div>
@@ -506,6 +772,7 @@ export const NodeInspector: React.FC = () => {
           )}
         </div>
       </div>
+      )}
 
       {/* Footer Actions */}
       <div className="border-t border-slate-200/90 bg-slate-50/80 p-4 flex items-center justify-between gap-2.5">
