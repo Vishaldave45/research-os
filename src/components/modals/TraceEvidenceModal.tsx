@@ -30,6 +30,9 @@ interface TraceEvidenceModalProps {
 const TYPE_ICONS: Record<string, any> = {
   question: HelpCircle,
   paper: FileText,
+  evidence: ShieldCheck,
+  dataset: Layers,
+  model: Sparkles,
   gap: Search,
   hypothesis: Sparkles,
   experiment: FlaskConical,
@@ -40,6 +43,9 @@ const TYPE_ICONS: Record<string, any> = {
 
 const TYPE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   paper: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30' },
+  evidence: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/30' },
+  dataset: { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/30' },
+  model: { bg: 'bg-violet-500/10', text: 'text-violet-400', border: 'border-violet-500/30' },
   question: { bg: 'bg-sky-500/10', text: 'text-sky-400', border: 'border-sky-500/30' },
   gap: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/30' },
   hypothesis: { bg: 'bg-indigo-500/10', text: 'text-indigo-400', border: 'border-indigo-500/30' },

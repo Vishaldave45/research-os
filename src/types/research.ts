@@ -251,6 +251,8 @@ export type ViewMode =
   | 'matrix'
   | 'literature'
   | 'gaps'
+  | 'datasets'
+  | 'models'
   | 'benchmarks'
   | 'compute'
   | 'traceability'
