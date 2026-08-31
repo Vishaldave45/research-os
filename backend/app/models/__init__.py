@@ -16,6 +16,7 @@ from app.models.decision import Decision
 from app.models.claim import Claim
 from app.models.relationship import Relationship
 from app.models.refresh_token import RefreshToken
+from app.models.collaboration import Comment, ResearchReview, AuditLog
 
 __all__ = [
     "Base",
@@ -38,4 +39,7 @@ __all__ = [
     "Claim",
     "Relationship",
     "RefreshToken",
+    "Comment",
+    "ResearchReview",
+    "AuditLog",
 ]

@@ -650,5 +650,27 @@ export const entitiesApi = {
   async getTimeline(): Promise<any> {
     return apiClient.get('/timeline');
   },
+
+  // CollaborationOS
+  async listComments(entityType: string, entityId: string): Promise<any[]> {
+    return apiClient.get<any[]>(`/collaboration/comments?entity_type=${entityType}&entity_id=${entityId}`);
+  },
+  async createComment(data: { entity_type: string; entity_id: string; parent_id?: string; content: string; mentions?: string[] }): Promise<any> {
+    return apiClient.post('/collaboration/comments', data);
+  },
+  async deleteComment(commentId: string): Promise<void> {
+    return apiClient.delete(`/collaboration/comments/${commentId}`);
+  },
+  async listReviews(entityType: string, entityId: string): Promise<any[]> {
+    return apiClient.get<any[]>(`/collaboration/reviews?entity_type=${entityType}&entity_id=${entityId}`);
+  },
+  async createReview(data: { entity_type: string; entity_id: string; verdict: string; comments?: string; confidence_rating?: number }): Promise<any> {
+    return apiClient.post('/collaboration/reviews', data);
+  },
+  async listAuditLogs(entityType?: string, limit: number = 100): Promise<any[]> {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (entityType) params.append('entity_type', entityType);
+    return apiClient.get<any[]>(`/collaboration/audit-logs?${params.toString()}`);
+  },
 };
 
