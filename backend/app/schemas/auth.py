@@ -61,3 +61,23 @@ class TokenRefreshRequest(BaseModel):
 class AuthResponse(BaseModel):
     user: UserRead
     tokens: TokenResponse
+
+
+class OAuthUrlResponse(BaseModel):
+    provider: str
+    url: str
+    configured: bool
+    client_id: Optional[str] = None
+    redirect_uri: str
+
+
+class OAuthCallbackRequest(BaseModel):
+    provider: str
+    code: str
+    redirect_uri: str
+
+
+class OAuthDevConnectRequest(BaseModel):
+    provider: str  # "google" or "github"
+    email: Optional[EmailStr] = None
+    full_name: Optional[str] = None

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Lock, Mail, User, Shield, Check, AlertCircle, Loader2 } from 'lucide-react';
-import { authApi } from '../../services/api/auth.api';
+import { X, Lock, Mail, User, Shield, AlertCircle, Loader2 } from 'lucide-react';
+import { useAuthStore } from '../../features/auth/store/authStore';
+import { OAuthButtons } from '../../features/auth/components/OAuthButtons';
 import { useResearchStore } from '../../store/useResearchStore';
 
 interface AuthModalProps {
@@ -11,45 +12,47 @@ interface AuthModalProps {
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [isRegister, setIsRegister] = useState(false);
-  const [email, setEmail] = useState('lead.researcher@lab.org');
-  const [password, setPassword] = useState('researcher123');
-  const [fullName, setFullName] = useState('Dr. Elena Rostova');
-  const [role, setRole] = useState('Principal Investigator');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
 
+  const { login, register, isLoading, error, clearError } = useAuthStore();
   const { syncFromBackend } = useResearchStore();
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setSuccessMsg(null);
+    clearError();
 
     try {
       if (isRegister) {
-        await authApi.register(email, password, fullName, role);
-        setSuccessMsg('Account registered and session created!');
+        await register({
+          email: email.trim(),
+          password,
+          full_name: fullName.trim() || 'Principal Researcher',
+        });
       } else {
-        await authApi.login(email, password);
-        setSuccessMsg('Signed in successfully!');
+        await login({
+          email: email.trim(),
+          password,
+        });
       }
 
       if (syncFromBackend) {
         await syncFromBackend();
       }
-
-      setTimeout(() => {
-        onClose();
-      }, 700);
-    } catch (err: any) {
-      setError(err.message || 'Authentication failed');
-    } finally {
-      setLoading(false);
+      onClose();
+    } catch {
+      // Error handled in store
     }
+  };
+
+  const handleOAuthSuccess = async () => {
+    if (syncFromBackend) {
+      await syncFromBackend();
+    }
+    onClose();
   };
 
   return (
@@ -75,13 +78,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   {isRegister ? 'Create Research Profile' : 'ResearchOS Sign In'}
                 </h3>
                 <p className="text-xs text-slate-400">
-                  Multi-tenant JWT session & workspace access
+                  Google & secure researcher authentication
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-1 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors"
+              className="p-1 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -95,50 +98,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               </div>
             )}
 
-            {successMsg && (
-              <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-300 text-xs flex items-center gap-2">
-                <Check className="w-4 h-4 shrink-0" />
-                <span>{successMsg}</span>
-              </div>
-            )}
-
             {isRegister && (
-              <>
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                    Full Name & Title
-                  </label>
-                  <div className="relative">
-                    <User className="w-4 h-4 absolute left-3 top-2.5 text-slate-500" />
-                    <input
-                      type="text"
-                      required
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Dr. Jane Doe"
-                      className="w-full pl-9 pr-3 py-2 bg-slate-800/80 border border-slate-700/80 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                    Research Role
-                  </label>
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                  Full Name & Title
+                </label>
+                <div className="relative">
+                  <User className="w-4 h-4 absolute left-3 top-2.5 text-slate-500" />
                   <input
                     type="text"
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
-                    placeholder="Principal Investigator / Postdoc"
-                    className="w-full px-3 py-2 bg-slate-800/80 border border-slate-700/80 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                    required
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Dr. Jane Doe"
+                    className="w-full pl-9 pr-3 py-2 bg-slate-800/80 border border-slate-700/80 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
                   />
                 </div>
-              </>
+              </div>
             )}
 
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                Lab Email Address
+                Institutional Email Address
               </label>
               <div className="relative">
                 <Mail className="w-4 h-4 absolute left-3 top-2.5 text-slate-500" />
@@ -172,27 +153,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 mt-2"
+              disabled={isLoading}
+              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 mt-2 cursor-pointer"
             >
-              {loading ? (
+              {isLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : isRegister ? (
                 'Create Profile & Initialize Workspace'
               ) : (
-                'Sign In to Research Space'
+                'Sign In with Credentials'
               )}
             </button>
 
-            <div className="pt-3 border-t border-slate-800 text-center">
+            {/* OAuth Buttons (Google & GitHub) */}
+            <div className="pt-1">
+              <OAuthButtons onSuccess={handleOAuthSuccess} />
+            </div>
+
+            <div className="pt-2 text-center">
               <button
                 type="button"
                 onClick={() => setIsRegister(!isRegister)}
-                className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
               >
                 {isRegister
                   ? 'Already have an active profile? Sign In'
-                  : "Need a new isolated workspace? Create profile"}
+                  : 'Need a new isolated workspace? Create profile'}
               </button>
             </div>
           </form>
@@ -201,3 +187,4 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     </AnimatePresence>
   );
 };
+

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Project } from '../../../types/research';
 import { projectApi, CreateProjectPayload, UpdateProjectPayload } from '../api/projectApi';
+import { apiClient } from '../../../services/api/client';
 
 export interface ProjectState {
   projects: Project[];
@@ -28,6 +29,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   clearError: () => set({ error: null }),
 
   fetchProjects: async (workspaceId: string) => {
+    if (!workspaceId) {
+      set({ projects: [], activeProject: null, isLoading: false, error: null });
+      return [];
+    }
+
     set({ isLoading: true, error: null });
     try {
       const projects = await projectApi.listByWorkspace(workspaceId);
@@ -45,12 +51,13 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         projects,
         activeProject: active,
         isLoading: false,
+        error: null,
       });
       return projects;
     } catch (err: any) {
       set({
         isLoading: false,
-        error: err.message || 'Failed to load research projects.',
+        error: err.status === 401 ? null : err.message || 'Failed to load research projects.',
       });
       return [];
     }

@@ -11,22 +11,23 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   fallback,
 }) => {
-  const { isAuthenticated, isInitialized, isLoading } = useAuthStore();
+  const { isAuthenticated, status, isInitialized } = useAuthStore();
 
-  if (!isInitialized && isLoading) {
+  if (!isInitialized || status === 'idle') {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-slate-950 text-white">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
-          <p className="text-xs text-slate-400 font-medium">Validating research session...</p>
-        </div>
+      <div className="flex h-screen w-screen flex-col items-center justify-center bg-slate-900 text-slate-100">
+        <Loader2 className="h-8 w-8 animate-spin text-indigo-500 mb-3" />
+        <p className="text-sm text-slate-400 font-medium tracking-wide">
+          Initializing ResearchOS Environment...
+        </p>
       </div>
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || status === 'unauthenticated') {
     return <>{fallback}</>;
   }
 
   return <>{children}</>;
 };
+

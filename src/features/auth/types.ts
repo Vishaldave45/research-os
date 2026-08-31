@@ -38,7 +38,32 @@ export interface TokenRefreshResponse {
   expires_in: number;
 }
 
+export type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated';
+
+export type OAuthProvider = 'google' | 'github';
+
+export interface OAuthUrlResponse {
+  provider: OAuthProvider;
+  url: string;
+  configured: boolean;
+  client_id?: string;
+  redirect_uri: string;
+}
+
+export interface OAuthCallbackPayload {
+  provider: OAuthProvider;
+  code: string;
+  redirect_uri: string;
+}
+
+export interface OAuthDevConnectPayload {
+  provider: OAuthProvider;
+  email?: string;
+  full_name?: string;
+}
+
 export interface AuthState {
+  status: AuthStatus;
   user: AuthUser | null;
   tokens: AuthTokens | null;
   isAuthenticated: boolean;
@@ -47,6 +72,9 @@ export interface AuthState {
   error: string | null;
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (credentials: RegisterCredentials) => Promise<void>;
+  loginWithOAuth: (provider: OAuthProvider) => Promise<void>;
+  handleOAuthCode: (payload: OAuthCallbackPayload) => Promise<void>;
+  connectOAuthDev: (payload: OAuthDevConnectPayload) => Promise<void>;
   logout: () => Promise<void>;
   refreshTokens: () => Promise<boolean>;
   clearError: () => void;

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { Mail, Lock, User as UserIcon, UserPlus, AlertCircle, Loader2, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { OAuthButtons } from './OAuthButtons';
 
 interface RegisterFormProps {
   onSuccess?: () => void;
@@ -177,6 +178,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
           </>
         )}
       </button>
+
+      {/* OAuth Providers (Google & GitHub) */}
+      <OAuthButtons onSuccess={onSuccess} />
 
       {/* Switch to Login */}
       {onSwitchToLogin && (

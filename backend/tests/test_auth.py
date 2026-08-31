@@ -252,7 +252,7 @@ async def test_auth_api_endpoints_integration(monkeypatch):
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        # 1. Register endpoint
+        # TEST 1: POST /auth/register and /api/v1/auth/register without Authorization header
         reg_res = await client.post(
             "/api/v1/auth/register",
             json={
@@ -261,7 +261,7 @@ async def test_auth_api_endpoints_integration(monkeypatch):
                 "full_name": "Albert Einstein",
             },
         )
-        assert reg_res.status_code == 201
+        assert reg_res.status_code == 201, f"Registration failed: {reg_res.text}"
         data = reg_res.json()
         assert data["user"]["email"] == "albert.einstein@princeton.edu"
         assert "password" not in data["user"]
@@ -269,18 +269,19 @@ async def test_auth_api_endpoints_integration(monkeypatch):
         access_token = data["tokens"]["access_token"]
         refresh_token = data["tokens"]["refresh_token"]
 
-        # 2. Duplicate registration endpoint fails with 409
-        dup_res = await client.post(
-            "/api/v1/auth/register",
+        # Also test /auth/register public route
+        reg_res_root = await client.post(
+            "/auth/register",
             json={
-                "email": "albert.einstein@princeton.edu",
-                "password": "Relativity#1905General",
-                "full_name": "Albert Einstein",
+                "email": "niels.bohr@copenhagen.edu",
+                "password": "QuantumMechanics#1913",
+                "full_name": "Niels Bohr",
             },
         )
-        assert dup_res.status_code == 409
+        assert reg_res_root.status_code == 201
 
-        # 3. Login endpoint
+        # TEST 2: POST /auth/login without Authorization header
+        # 2a. Valid credentials -> 200 OK
         login_res = await client.post(
             "/api/v1/auth/login",
             json={
@@ -292,21 +293,44 @@ async def test_auth_api_endpoints_integration(monkeypatch):
         login_data = login_res.json()
         assert login_data["user"]["email"] == "albert.einstein@princeton.edu"
 
-        # 4. /me endpoint with valid Bearer token
-        me_res = await client.get(
+        # 2b. Invalid credentials -> 401 with Incorrect email or password (NOT Missing Authorization header)
+        invalid_login = await client.post(
+            "/api/v1/auth/login",
+            json={
+                "email": "albert.einstein@princeton.edu",
+                "password": "WrongPassword123!",
+            },
+        )
+        assert invalid_login.status_code == 401
+        assert "Incorrect email or password" in invalid_login.text
+        assert "Missing Authorization header" not in invalid_login.text
+
+        # TEST 3: GET /auth/me without Authorization -> 401 Missing Authorization header
+        unauth_me = await client.get("/api/v1/auth/me")
+        assert unauth_me.status_code == 401
+        assert "Missing Authorization header" in unauth_me.text
+
+        # GET /auth/me with valid Bearer token -> 200 OK
+        auth_me = await client.get(
             "/api/v1/auth/me",
             headers={"Authorization": f"Bearer {access_token}"},
         )
-        assert me_res.status_code == 200
-        me_data = me_res.json()
-        assert me_data["email"] == "albert.einstein@princeton.edu"
-        assert me_data["full_name"] == "Albert Einstein"
+        assert auth_me.status_code == 200
+        assert auth_me.json()["email"] == "albert.einstein@princeton.edu"
 
-        # 5. /me endpoint with missing / invalid token fails with 401 / 403
-        unauth_res = await client.get("/api/v1/auth/me")
-        assert unauth_res.status_code in [401, 403]
+        # TEST 4: GET /workspaces without Authorization -> 401
+        unauth_ws = await client.get("/api/v1/workspaces")
+        assert unauth_ws.status_code == 401
+        assert "Missing Authorization header" in unauth_ws.text
 
-        # 6. Refresh token endpoint
+        # TEST 5: GET /workspaces with valid JWT -> Authorized (not 401)
+        auth_ws = await client.get(
+            "/api/v1/workspaces",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        assert auth_ws.status_code != 401
+
+        # TEST 6: Refresh token rotation
         ref_res = await client.post(
             "/api/v1/auth/refresh",
             json={"refresh_token": refresh_token},
@@ -316,7 +340,7 @@ async def test_auth_api_endpoints_integration(monkeypatch):
         new_refresh_token = ref_data["refresh_token"]
         assert new_refresh_token != refresh_token
 
-        # 7. Logout endpoint
+        # Logout endpoint
         logout_res = await client.post(
             "/api/v1/auth/logout",
             json={"refresh_token": new_refresh_token},

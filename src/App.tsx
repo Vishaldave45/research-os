@@ -39,7 +39,7 @@ export default function App() {
     isSyncing,
   } = useResearchStore();
 
-  const { initAuth, isAuthenticated } = useAuthStore();
+  const { initAuth, isAuthenticated, status } = useAuthStore();
   const [authView, setAuthView] = useState<'login' | 'register' | 'forgot-password'>('login');
 
   useEffect(() => {
@@ -48,11 +48,11 @@ export default function App() {
   }, [initAuth]);
 
   useEffect(() => {
-    // Synchronize research state once authenticated
-    if (isAuthenticated) {
+    // Synchronize research state ONLY when authenticated
+    if (isAuthenticated && status === 'authenticated') {
       syncFromBackend();
     }
-  }, [isAuthenticated, syncFromBackend]);
+  }, [isAuthenticated, status, syncFromBackend]);
 
   const authFallback =
     authView === 'login' ? (

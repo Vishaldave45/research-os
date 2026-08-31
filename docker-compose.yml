@@ -3,15 +3,15 @@ services:
     image: postgres:15-alpine
     container_name: researchos-db
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-researchos}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-researchos_secret_password}
-      POSTGRES_DB: ${POSTGRES_DB:-researchos_db}
+      POSTGRES_USER: ${POSTGRES_USER:-researchos_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Dev@123.}
+      POSTGRES_DB: ${POSTGRES_DB:-researchos}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5435}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-researchos} -d ${POSTGRES_DB:-researchos_db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-researchos_user} -d ${POSTGRES_DB:-researchos}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -22,8 +22,8 @@ services:
       dockerfile: Dockerfile
     container_name: researchos-api
     environment:
-      DATABASE_URL: ${DOCKER_DATABASE_URL:-postgresql+asyncpg://researchos:researchos_secret_password@postgres:5432/researchos_db}
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev_jwt_secret_key_change_in_production_32chars}
+      DATABASE_URL: ${DOCKER_DATABASE_URL:-postgresql+asyncpg://researchos_user:Dev%40123.@postgres:5432/researchos}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-yS0Ug/jfKXTcUxzDNWthue/3ugIm0LoZEvoD+cFxzhc=}
       JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
       REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}

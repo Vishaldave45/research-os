@@ -14,18 +14,25 @@ class Settings(BaseSettings):
     
     # Database
     DATABASE_URL: str = Field(
-        default="postgresql+asyncpg://researchos:researchos_secret_password@localhost:5432/researchos_db",
+        default="postgresql+asyncpg://researchos_user:Dev%40123.@localhost:5435/researchos",
         description="Async PostgreSQL connection URL",
     )
     
     # JWT Authentication & Security
     JWT_SECRET_KEY: str = Field(
-        default="dev_jwt_secret_key_change_in_production_32chars",
+        default="yS0Ug/jfKXTcUxzDNWthue/3ugIm0LoZEvoD+cFxzhc=",
         description="Secret key for signing JWTs",
     )
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    # OAuth Providers (Google & GitHub)
+    GOOGLE_CLIENT_ID: str = Field(default="", description="Google OAuth 2.0 Client ID")
+    GOOGLE_CLIENT_SECRET: str = Field(default="", description="Google OAuth 2.0 Client Secret")
+    GITHUB_CLIENT_ID: str = Field(default="", description="GitHub OAuth App Client ID")
+    GITHUB_CLIENT_SECRET: str = Field(default="", description="GitHub OAuth App Client Secret")
+    APP_URL: str = Field(default="", description="Base container URL for OAuth redirects")
     
     # CORS (accepts List[str] or comma-separated string)
     CORS_ORIGINS: Union[List[str], str] = [
@@ -66,7 +73,7 @@ class Settings(BaseSettings):
         return self
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(".env", ".env.example"),
         case_sensitive=True,
         extra="allow",
     )

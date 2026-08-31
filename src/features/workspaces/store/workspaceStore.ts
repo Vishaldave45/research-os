@@ -47,12 +47,13 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         workspaces,
         activeWorkspace: active,
         isLoading: false,
+        error: null,
       });
       return workspaces;
     } catch (err: any) {
       set({
         isLoading: false,
-        error: err.message || 'Failed to load workspaces.',
+        error: err.status === 401 ? null : err.message || 'Failed to load workspaces.',
       });
       return [];
     }

@@ -199,14 +199,6 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
     setError: (error) => set({ error }),
 
     syncFromBackend: async () => {
-      const token = apiClient.getAccessToken();
-      if (!token) {
-        set({
-          isAuthModalOpen: true,
-          error: 'Please sign in or register to connect to your persistent research workspace.',
-        });
-        return;
-      }
       set({ isSyncing: true, error: null });
       try {
         // Fetch user workspaces and activate primary workspace

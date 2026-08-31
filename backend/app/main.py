@@ -1,5 +1,6 @@
+import logging
 from fastapi import FastAPI, Request, status, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
@@ -27,6 +28,34 @@ from app.api.v1.projects import router as projects_router
 from app.api.v1.synthesis import router as synthesis_router
 from app.api.v1.seed import router as seed_router
 
+# Setup server-side logger
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] [%(name)s] %(message)s",
+)
+logger = logging.getLogger("app.middleware.auth")
+
+
+def get_sanitized_headers(request: Request) -> dict[str, str]:
+    """Helper to inspect all request headers while safely displaying token structures."""
+    headers_dict = dict(request.headers)
+    sanitized = {}
+    for key, val in headers_dict.items():
+        if key.lower() == "authorization":
+            if val.startswith("Bearer "):
+                token_body = val[7:]
+                if len(token_body) > 12:
+                    sanitized[key] = f"Bearer {token_body[:6]}...{token_body[-4:]} (len={len(token_body)})"
+                else:
+                    sanitized[key] = f"Bearer {token_body} (len={len(token_body)})"
+            else:
+                sanitized[key] = f"{val[:10]}... (len={len(val)}, non-bearer format)"
+        elif key.lower() == "cookie":
+            sanitized[key] = f"[Cookies present, len={len(val)}]"
+        else:
+            sanitized[key] = val
+    return sanitized
+
 
 def create_application() -> FastAPI:
     application = FastAPI(
@@ -35,6 +64,36 @@ def create_application() -> FastAPI:
         docs_url=f"{settings.API_V1_STR}/docs",
         redoc_url=f"{settings.API_V1_STR}/redoc",
     )
+
+    # Middleware: Log headers on any 401 Unauthorized response
+    @application.middleware("http")
+    async def auth_debug_logging_middleware(request: Request, call_next):
+        response = await call_next(request)
+        if response.status_code == status.HTTP_401_UNAUTHORIZED:
+            raw_headers = dict(request.headers)
+            sanitized = get_sanitized_headers(request)
+            auth_header_raw = raw_headers.get("authorization") or raw_headers.get("Authorization")
+            has_auth = auth_header_raw is not None
+            
+            logger.warning(
+                "===============================================================\n"
+                "[AUTH MIDDLEWARE: 401 UNAUTHORIZED TRIGGERED]\n"
+                "  -> Method & Path: %s %s\n"
+                "  -> Client IP: %s\n"
+                "  -> Has Authorization Header: %s\n"
+                "  -> Raw Authorization Value: %s\n"
+                "  -> All Received Header Keys: %s\n"
+                "  -> Detailed Received Headers: %s\n"
+                "===============================================================",
+                request.method,
+                request.url.path,
+                request.client.host if request.client else "unknown",
+                has_auth,
+                sanitized.get("authorization") or sanitized.get("Authorization") or "<NONE>",
+                list(raw_headers.keys()),
+                sanitized,
+            )
+        return response
 
     # CORS configuration
     application.add_middleware(
@@ -60,6 +119,17 @@ def create_application() -> FastAPI:
         code_str = "HTTP_ERROR"
         if exc.status_code == status.HTTP_401_UNAUTHORIZED:
             code_str = "UNAUTHORIZED"
+            sanitized_hdrs = get_sanitized_headers(request)
+            logger.warning(
+                "[HTTP_EXCEPTION: 401 UNAUTHORIZED]\n"
+                "  -> Path: %s %s\n"
+                "  -> Reason: %s\n"
+                "  -> Request Headers: %s",
+                request.method,
+                request.url.path,
+                detail_msg,
+                sanitized_hdrs,
+            )
         elif exc.status_code == status.HTTP_403_FORBIDDEN:
             code_str = "FORBIDDEN"
         elif exc.status_code == status.HTTP_404_NOT_FOUND:
@@ -110,8 +180,12 @@ def create_application() -> FastAPI:
 
     # Mount v1 routers
     application.include_router(auth_router, prefix=settings.API_V1_STR)
+    application.include_router(auth_router, prefix="/api")
+    application.include_router(auth_router)
     application.include_router(workspaces_router, prefix=settings.API_V1_STR)
+    application.include_router(workspaces_router, prefix="/api")
     application.include_router(projects_router, prefix=settings.API_V1_STR)
+    application.include_router(projects_router, prefix="/api")
     application.include_router(questions_router, prefix=settings.API_V1_STR)
     application.include_router(papers_router, prefix=settings.API_V1_STR)
     application.include_router(gaps_router, prefix=settings.API_V1_STR)
@@ -143,6 +217,90 @@ def create_application() -> FastAPI:
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 content={"status": "not_ready", "error": "Database connection failed"},
             )
+
+    # OAuth popup HTML callback handlers
+    @application.get(["/auth/callback", "/auth/callback/", "/api/auth/callback", "/api/v1/auth/callback"], response_class=HTMLResponse, tags=["Authentication"])
+    async def oauth_popup_callback_page(request: Request):
+        """Returns minimal HTML script that communicates auth code or status to parent opener and closes."""
+        return HTMLResponse(
+            content="""<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>ResearchOS &bull; Authentication Complete</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #0f172a;
+        color: #f8fafc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 24px;
+        box-sizing: border-box;
+      }
+      .card {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 16px;
+        padding: 32px 24px;
+        text-align: center;
+        max-width: 400px;
+        width: 100%;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+      }
+      .spinner {
+        display: inline-block;
+        width: 36px;
+        height: 36px;
+        border: 3px solid rgba(99, 102, 241, 0.2);
+        border-radius: 50%;
+        border-top-color: #6366f1;
+        animation: spin 1s ease-in-out infinite;
+        margin-bottom: 16px;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      h2 { margin: 0 0 8px; font-size: 18px; font-weight: 600; color: #ffffff; }
+      p { margin: 0; font-size: 13px; color: #94a3b8; line-height: 1.5; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="spinner"></div>
+      <h2>Authentication Completed</h2>
+      <p>Synchronizing your research credentials with ResearchOS. This window will close automatically.</p>
+    </div>
+    <script>
+      (function() {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        const error = params.get('error');
+        const error_description = params.get('error_description');
+        const state = params.get('state');
+
+        if (window.opener) {
+          window.opener.postMessage({
+            type: 'OAUTH_AUTH_SUCCESS',
+            code: code,
+            error: error,
+            error_description: error_description,
+            state: state
+          }, '*');
+          setTimeout(() => {
+            try { window.close(); } catch (e) {}
+          }, 800);
+        } else {
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 1000);
+        }
+      })();
+    </script>
+  </body>
+</html>"""
+        )
 
     return application
 
