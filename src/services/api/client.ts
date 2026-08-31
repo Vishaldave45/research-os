@@ -9,6 +9,8 @@ import {
   INITIAL_CLAIMS,
   INITIAL_RELATIONSHIPS,
 } from '../../data/canonicalWceData';
+import { db } from '../firebase/firebase';
+import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 
 export interface ApiError {
   message: string;
@@ -16,7 +18,7 @@ export interface ApiError {
   details?: any;
 }
 
-interface StoredUser {
+export interface StoredUser {
   id: string;
   email: string;
   password?: string;
@@ -28,14 +30,24 @@ interface StoredUser {
   workspaces: string[];
 }
 
-interface StoredWorkspace {
+export interface StoredWorkspace {
   id: string;
   name: string;
   slug: string;
   description: string;
   owner_id: string;
   created_at: string;
-  members: { user_id: string; role: string }[];
+  members: { user_id: string; role: string; email?: string; full_name?: string }[];
+}
+
+export interface StoredMember {
+  id: string;
+  workspace_id: string;
+  user_id: string;
+  email: string;
+  full_name: string;
+  role: 'owner' | 'admin' | 'researcher' | 'viewer';
+  created_at: string;
 }
 
 const STORAGE_KEYS = {
@@ -44,11 +56,12 @@ const STORAGE_KEYS = {
   WORKSPACE_ID: 'researchos_workspace_id',
   USERS_DB: 'researchos_users_db',
   WORKSPACES_DB: 'researchos_workspaces_db',
-  ENTITIES_DB: 'researchos_entities_db',
-  RELATIONSHIPS_DB: 'researchos_relationships_db',
+  MEMBERS_PREFIX: 'researchos_members_',
+  ENTITIES_PREFIX: 'researchos_entities_',
+  RELATIONSHIPS_PREFIX: 'researchos_relationships_',
 };
 
-// Seed default development user if not present
+// Seed default development users
 function getInitialUsers(): StoredUser[] {
   return [
     {
@@ -60,7 +73,7 @@ function getInitialUsers(): StoredUser[] {
       is_active: true,
       avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=128&auto=format&fit=crop&q=80',
       created_at: '2026-01-10T08:00:00.000Z',
-      workspaces: ['ws-0000-0000-0001'],
+      workspaces: ['ws-canonical-wce'],
     },
     {
       id: 'usr-0000-0000-0002',
@@ -71,7 +84,7 @@ function getInitialUsers(): StoredUser[] {
       is_active: true,
       avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=128&auto=format&fit=crop&q=80',
       created_at: '2026-01-12T08:00:00.000Z',
-      workspaces: ['ws-0000-0000-0001'],
+      workspaces: ['ws-canonical-wce'],
     },
   ];
 }
@@ -79,16 +92,52 @@ function getInitialUsers(): StoredUser[] {
 function getInitialWorkspaces(): StoredWorkspace[] {
   return [
     {
-      id: 'ws-0000-0000-0001',
+      id: 'ws-canonical-wce',
       name: 'Wireless Capsule Endoscopy Lab',
       slug: 'wce-lab',
       description: 'Model compression, depth reduction, and knowledge distillation on Kvasir-Capsule.',
       owner_id: 'usr-0000-0000-0001',
       created_at: '2026-01-10T08:30:00.000Z',
       members: [
-        { user_id: 'usr-0000-0000-0001', role: 'owner' },
-        { user_id: 'usr-0000-0000-0002', role: 'editor' },
+        { user_id: 'usr-0000-0000-0001', role: 'owner', email: 'lead.researcher@lab.org', full_name: 'Dr. Elena Vance' },
+        { user_id: 'usr-0000-0000-0002', role: 'admin', email: 'vdave8633@gmail.com', full_name: 'Dr. V. Dave' },
       ],
+    },
+  ];
+}
+
+function getInitialMembersForWorkspace(wsId: string): StoredMember[] {
+  if (wsId === 'ws-canonical-wce') {
+    return [
+      {
+        id: 'mem-001',
+        workspace_id: 'ws-canonical-wce',
+        user_id: 'usr-0000-0000-0001',
+        email: 'lead.researcher@lab.org',
+        full_name: 'Dr. Elena Vance',
+        role: 'owner',
+        created_at: '2026-01-10T08:30:00.000Z',
+      },
+      {
+        id: 'mem-002',
+        workspace_id: 'ws-canonical-wce',
+        user_id: 'usr-0000-0000-0002',
+        email: 'vdave8633@gmail.com',
+        full_name: 'Dr. V. Dave',
+        role: 'admin',
+        created_at: '2026-01-12T09:00:00.000Z',
+      },
+    ];
+  }
+  return [
+    {
+      id: `mem-${Date.now()}-1`,
+      workspace_id: wsId,
+      user_id: 'usr-0000-0000-0001',
+      email: 'lead.researcher@lab.org',
+      full_name: 'Dr. Elena Vance',
+      role: 'owner',
+      created_at: new Date().toISOString(),
     },
   ];
 }
@@ -121,7 +170,8 @@ class ApiClient {
       if (!localStorage.getItem(STORAGE_KEYS.WORKSPACES_DB)) {
         localStorage.setItem(STORAGE_KEYS.WORKSPACES_DB, JSON.stringify(getInitialWorkspaces()));
       }
-      if (!localStorage.getItem(STORAGE_KEYS.ENTITIES_DB)) {
+      const canonicalKey = `${STORAGE_KEYS.ENTITIES_PREFIX}ws-canonical-wce`;
+      if (!localStorage.getItem(canonicalKey)) {
         const initialEntities = {
           questions: INITIAL_QUESTIONS,
           papers: INITIAL_PAPERS,
@@ -132,10 +182,18 @@ class ApiClient {
           decisions: INITIAL_DECISIONS,
           claims: INITIAL_CLAIMS,
         };
-        localStorage.setItem(STORAGE_KEYS.ENTITIES_DB, JSON.stringify(initialEntities));
+        localStorage.setItem(canonicalKey, JSON.stringify(initialEntities));
       }
-      if (!localStorage.getItem(STORAGE_KEYS.RELATIONSHIPS_DB)) {
-        localStorage.setItem(STORAGE_KEYS.RELATIONSHIPS_DB, JSON.stringify(INITIAL_RELATIONSHIPS));
+      const canonicalRelKey = `${STORAGE_KEYS.RELATIONSHIPS_PREFIX}ws-canonical-wce`;
+      if (!localStorage.getItem(canonicalRelKey)) {
+        localStorage.setItem(canonicalRelKey, JSON.stringify(INITIAL_RELATIONSHIPS));
+      }
+      const canonicalMemKey = `${STORAGE_KEYS.MEMBERS_PREFIX}ws-canonical-wce`;
+      if (!localStorage.getItem(canonicalMemKey)) {
+        localStorage.setItem(
+          canonicalMemKey,
+          JSON.stringify(getInitialMembersForWorkspace('ws-canonical-wce'))
+        );
       }
     } catch (e) {
       console.warn('LocalStorage init warning:', e);
@@ -187,7 +245,7 @@ class ApiClient {
         return wsId;
       }
     } catch {}
-    return 'ws-0000-0000-0001';
+    return 'ws-canonical-wce';
   }
 
   public getAccessToken(): string | null {
@@ -204,7 +262,6 @@ class ApiClient {
     return null;
   }
 
-  // Generate realistic JWT simulation
   private generateToken(userId: string, email: string, type: 'access' | 'refresh'): string {
     const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
     const payload = btoa(
@@ -259,46 +316,88 @@ class ApiClient {
     } catch {}
   }
 
-  private getEntities(): Record<string, any[]> {
+  private getMembers(workspaceId: string): StoredMember[] {
     try {
-      const raw = localStorage.getItem(STORAGE_KEYS.ENTITIES_DB);
+      const raw = localStorage.getItem(`${STORAGE_KEYS.MEMBERS_PREFIX}${workspaceId}`);
       if (raw) return JSON.parse(raw);
     } catch {}
+    return getInitialMembersForWorkspace(workspaceId);
+  }
+
+  private saveMembers(workspaceId: string, members: StoredMember[]) {
+    try {
+      localStorage.setItem(`${STORAGE_KEYS.MEMBERS_PREFIX}${workspaceId}`, JSON.stringify(members));
+    } catch {}
+  }
+
+  private getEntities(workspaceId: string): Record<string, any[]> {
+    try {
+      const raw = localStorage.getItem(`${STORAGE_KEYS.ENTITIES_PREFIX}${workspaceId}`);
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    if (workspaceId === 'ws-canonical-wce') {
+      return {
+        questions: INITIAL_QUESTIONS,
+        papers: INITIAL_PAPERS,
+        gaps: INITIAL_GAPS,
+        hypotheses: INITIAL_HYPOTHESES,
+        experiments: INITIAL_EXPERIMENTS,
+        results: INITIAL_RESULTS,
+        decisions: INITIAL_DECISIONS,
+        claims: INITIAL_CLAIMS,
+      };
+    }
     return {
-      questions: INITIAL_QUESTIONS,
-      papers: INITIAL_PAPERS,
-      gaps: INITIAL_GAPS,
-      hypotheses: INITIAL_HYPOTHESES,
-      experiments: INITIAL_EXPERIMENTS,
-      results: INITIAL_RESULTS,
-      decisions: INITIAL_DECISIONS,
-      claims: INITIAL_CLAIMS,
+      questions: [],
+      papers: [],
+      gaps: [],
+      hypotheses: [],
+      experiments: [],
+      results: [],
+      decisions: [],
+      claims: [],
     };
   }
 
-  private saveEntities(entities: Record<string, any[]>) {
+  private saveEntities(workspaceId: string, entities: Record<string, any[]>) {
     try {
-      localStorage.setItem(STORAGE_KEYS.ENTITIES_DB, JSON.stringify(entities));
+      localStorage.setItem(`${STORAGE_KEYS.ENTITIES_PREFIX}${workspaceId}`, JSON.stringify(entities));
+      // Asynchronously backup to Firestore collection if available
+      this.syncWorkspaceToFirestore(workspaceId, entities).catch(() => {});
     } catch {}
   }
 
-  private getRelationships(): any[] {
+  private getRelationships(workspaceId: string): any[] {
     try {
-      const raw = localStorage.getItem(STORAGE_KEYS.RELATIONSHIPS_DB);
+      const raw = localStorage.getItem(`${STORAGE_KEYS.RELATIONSHIPS_PREFIX}${workspaceId}`);
       if (raw) return JSON.parse(raw);
     } catch {}
-    return INITIAL_RELATIONSHIPS;
+    if (workspaceId === 'ws-canonical-wce') {
+      return INITIAL_RELATIONSHIPS;
+    }
+    return [];
   }
 
-  private saveRelationships(rels: any[]) {
+  private saveRelationships(workspaceId: string, rels: any[]) {
     try {
-      localStorage.setItem(STORAGE_KEYS.RELATIONSHIPS_DB, JSON.stringify(rels));
+      localStorage.setItem(`${STORAGE_KEYS.RELATIONSHIPS_PREFIX}${workspaceId}`, JSON.stringify(rels));
     } catch {}
+  }
+
+  private async syncWorkspaceToFirestore(workspaceId: string, entities: Record<string, any[]>) {
+    try {
+      if (db) {
+        const wsRef = doc(db, 'workspaces', workspaceId);
+        await setDoc(wsRef, { updatedAt: new Date().toISOString(), entityCount: Object.values(entities).flat().length }, { merge: true });
+      }
+    } catch {
+      // Offline fallback
+    }
   }
 
   /**
-   * Internal authoritative router that handles all API operations locally
-   * with complete zero-error reliability and header-aware security.
+   * Authoritative routing engine with persistence across refresh,
+   * authentication, workspace switching, and membership.
    */
   private async handleInternalRoute(
     endpoint: string,
@@ -308,6 +407,7 @@ class ApiClient {
   ): Promise<any> {
     const cleanUrl = endpoint.replace(/^\/api\/v1/, '').replace(/^\/api/, '');
     const path = cleanUrl.split('?')[0];
+    const activeWsId = headers['X-Workspace-Id'] || this.getActiveWorkspaceId() || 'ws-canonical-wce';
 
     // -------------------------------------------------------------
     // AUTHENTICATION ROUTES
@@ -320,7 +420,6 @@ class ApiClient {
       );
 
       if (!user) {
-        // Auto-create researcher if not found or password matches
         const newUser: StoredUser = {
           id: `usr-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           email: (email || 'researcher@lab.org').trim().toLowerCase(),
@@ -329,7 +428,7 @@ class ApiClient {
           role: 'researcher',
           is_active: true,
           created_at: new Date().toISOString(),
-          workspaces: ['ws-0000-0000-0001'],
+          workspaces: ['ws-canonical-wce'],
         };
         users.push(newUser);
         this.saveUsers(users);
@@ -394,7 +493,7 @@ class ApiClient {
         role: role || 'Principal Investigator',
         is_active: true,
         created_at: new Date().toISOString(),
-        workspaces: ['ws-0000-0000-0001'],
+        workspaces: ['ws-canonical-wce'],
       };
 
       if (!existing) {
@@ -452,7 +551,7 @@ class ApiClient {
           is_active: true,
           avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=128&auto=format&fit=crop&q=80',
           created_at: new Date().toISOString(),
-          workspaces: ['ws-0000-0000-0001'],
+          workspaces: ['ws-canonical-wce'],
         };
         users.push(user);
         this.saveUsers(users);
@@ -524,7 +623,44 @@ class ApiClient {
     }
 
     // -------------------------------------------------------------
-    // WORKSPACE ROUTES
+    // WORKSPACE MEMBERSHIP ROUTES
+    // -------------------------------------------------------------
+    const memberListMatch = path.match(/^\/workspaces\/([^/]+)\/members$/);
+    if (memberListMatch) {
+      const wsId = memberListMatch[1];
+      if (method === 'GET') {
+        return this.getMembers(wsId);
+      }
+      if (method === 'POST') {
+        const members = this.getMembers(wsId);
+        const { email, role } = body || {};
+        const newMember: StoredMember = {
+          id: `mem-${Date.now()}`,
+          workspace_id: wsId,
+          user_id: `usr-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          email: email || 'collaborator@lab.org',
+          full_name: (email || 'Collaborator').split('@')[0].replace('.', ' '),
+          role: role || 'researcher',
+          created_at: new Date().toISOString(),
+        };
+        members.push(newMember);
+        this.saveMembers(wsId, members);
+        return newMember;
+      }
+    }
+
+    const memberDeleteMatch = path.match(/^\/workspaces\/([^/]+)\/members\/([^/]+)$/);
+    if (memberDeleteMatch && method === 'DELETE') {
+      const wsId = memberDeleteMatch[1];
+      const userId = memberDeleteMatch[2];
+      const members = this.getMembers(wsId);
+      const filtered = members.filter((m) => m.user_id !== userId && m.id !== userId);
+      this.saveMembers(wsId, filtered);
+      return { success: true };
+    }
+
+    // -------------------------------------------------------------
+    // WORKSPACE CRUD ROUTES
     // -------------------------------------------------------------
     if (path === '/workspaces' && method === 'GET') {
       return this.getWorkspaces();
@@ -532,8 +668,9 @@ class ApiClient {
 
     if (path === '/workspaces' && method === 'POST') {
       const workspaces = this.getWorkspaces();
+      const wsId = `ws-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
       const newWs: StoredWorkspace = {
-        id: `ws-${Date.now()}`,
+        id: wsId,
         name: body.name || 'New Research Lab',
         slug: body.slug || `lab-${Date.now()}`,
         description: body.description || '',
@@ -541,16 +678,38 @@ class ApiClient {
         created_at: new Date().toISOString(),
         members: [{ user_id: 'usr-0000-0000-0001', role: 'owner' }],
       };
-      workspaces.push(newWs);
+      workspaces.unshift(newWs);
       this.saveWorkspaces(workspaces);
+      this.setActiveWorkspace(wsId);
+
+      // Initialize workspace members
+      const initialMem = getInitialMembersForWorkspace(wsId);
+      this.saveMembers(wsId, initialMem);
+
       return newWs;
     }
 
+    const singleWsMatch = path.match(/^\/workspaces\/([^/]+)$/);
+    if (singleWsMatch && method === 'GET') {
+      const wsId = singleWsMatch[1];
+      const workspaces = this.getWorkspaces();
+      const ws = workspaces.find((w) => w.id === wsId);
+      if (ws) return ws;
+      return {
+        id: wsId,
+        name: 'Research Lab',
+        slug: 'research-lab',
+        description: '',
+        owner_id: 'usr-0000-0000-0001',
+        created_at: new Date().toISOString(),
+      };
+    }
+
     // -------------------------------------------------------------
-    // ENTITY CRUD ROUTES
+    // ENTITY CRUD ROUTES (Workspace-Scoped & Persistent)
     // -------------------------------------------------------------
-    const entities = this.getEntities();
-    const relationships = this.getRelationships();
+    const entities = this.getEntities(activeWsId);
+    const relationships = this.getRelationships(activeWsId);
 
     // Reset/seed canonical dataset or domain template
     if (path === '/seed/wce' || path === '/seed') {
@@ -564,15 +723,15 @@ class ApiClient {
         decisions: INITIAL_DECISIONS,
         claims: INITIAL_CLAIMS,
       };
-      this.saveEntities(initialEntities);
-      this.saveRelationships(INITIAL_RELATIONSHIPS);
+      this.saveEntities(activeWsId, initialEntities);
+      this.saveRelationships(activeWsId, INITIAL_RELATIONSHIPS);
       return { success: true, message: 'Canonical WCE dataset seeded successfully.' };
     }
 
     if (path === '/seed/template' || path === '/seed/custom') {
       if (body?.dataset) {
         const d = body.dataset;
-        this.saveEntities({
+        this.saveEntities(activeWsId, {
           questions: d.questions || [],
           papers: d.papers || [],
           gaps: d.gaps || [],
@@ -582,7 +741,7 @@ class ApiClient {
           decisions: d.decisions || [],
           claims: d.claims || [],
         });
-        this.saveRelationships(d.relationships || []);
+        this.saveRelationships(activeWsId, d.relationships || []);
         return { success: true, message: 'Domain template dataset seeded successfully.' };
       }
     }
@@ -595,13 +754,15 @@ class ApiClient {
           id: `rel-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
           source_id: body.source_id || body.sourceId,
           target_id: body.target_id || body.targetId,
-          relationship_type: body.relationship_type || body.relationshipType,
+          relation_type: body.relationship_type || body.relationshipType || body.relation_type || body.relationType,
           description: body.description || '',
           metadata: body.metadata || {},
+          confidence: body.confidence ?? 0.95,
+          notes: body.notes || '',
           created_at: new Date().toISOString(),
         };
         relationships.push(newRel);
-        this.saveRelationships(relationships);
+        this.saveRelationships(activeWsId, relationships);
         return newRel;
       }
     }
@@ -609,7 +770,7 @@ class ApiClient {
     if (path.startsWith('/relationships/') && method === 'DELETE') {
       const relId = path.split('/')[2];
       const filtered = relationships.filter((r) => r.id !== relId);
-      this.saveRelationships(filtered);
+      this.saveRelationships(activeWsId, filtered);
       return { success: true };
     }
 
@@ -632,7 +793,7 @@ class ApiClient {
       };
     }
 
-    // Standard entity collection endpoints: /questions, /papers, /gaps, /hypotheses, /experiments, /results, /decisions, /claims
+    // Standard entity collection endpoints
     const entityTypes = [
       'questions',
       'papers',
@@ -662,7 +823,7 @@ class ApiClient {
           };
           list.push(newEntity);
           entities[key] = list;
-          this.saveEntities(entities);
+          this.saveEntities(activeWsId, entities);
           return newEntity;
         }
       }
@@ -682,24 +843,23 @@ class ApiClient {
           if (idx >= 0) {
             list[idx] = { ...list[idx], ...body, updated_at: new Date().toISOString() };
             entities[key] = list;
-            this.saveEntities(entities);
+            this.saveEntities(activeWsId, entities);
             return list[idx];
           }
           const created = { ...body, id, updated_at: new Date().toISOString() };
           list.push(created);
           entities[key] = list;
-          this.saveEntities(entities);
+          this.saveEntities(activeWsId, entities);
           return created;
         }
 
         if (method === 'DELETE') {
           entities[key] = list.filter((e) => e.id !== id);
-          this.saveEntities(entities);
-          // Clean up dangling relationships
+          this.saveEntities(activeWsId, entities);
           const cleanedRels = relationships.filter(
             (r) => (r.source_id || r.sourceId) !== id && (r.target_id || r.targetId) !== id
           );
-          this.saveRelationships(cleanedRels);
+          this.saveRelationships(activeWsId, cleanedRels);
           return { success: true };
         }
       }
@@ -745,7 +905,6 @@ class ApiClient {
       parsedBody = options.body;
     }
 
-    // Execute authoritative, reliable client-side API engine
     return (await this.handleInternalRoute(endpoint, method, parsedBody, headers)) as T;
   }
 

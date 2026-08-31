@@ -22,6 +22,8 @@ import {
   HelpCircle,
   AlertCircle,
   Lightbulb,
+  Sliders,
+  TrendingUp,
 } from 'lucide-react';
 import { useResearchStore } from '../../store/useResearchStore';
 import { EntityType, ResearchEntity } from '../../types/research';
@@ -314,6 +316,16 @@ export const NodeInspector: React.FC = () => {
                       </div>
                     </div>
                   )}
+
+                  <button
+                    onClick={() => {
+                      setViewMode('benchmarks');
+                    }}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition shadow-xs cursor-pointer"
+                  >
+                    <Sliders className="h-3.5 w-3.5 text-indigo-400" />
+                    <span>Explore in Benchmark Studio & Pareto Frontier</span>
+                  </button>
                 </div>
               )}
 
@@ -414,6 +426,16 @@ export const NodeInspector: React.FC = () => {
                       ))}
                     </div>
                   )}
+
+                  <button
+                    onClick={() => {
+                      setViewMode('benchmarks');
+                    }}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition shadow-xs cursor-pointer"
+                  >
+                    <Sliders className="h-3.5 w-3.5 text-indigo-400" />
+                    <span>Open in Benchmark Studio & Compare Runs</span>
+                  </button>
                 </div>
               )}
             </div>

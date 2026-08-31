@@ -1,0 +1,84 @@
+{
+  "entities": {
+    "users": {
+      "title": "User Profiles",
+      "description": "Registered researcher user profiles and roles.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "fullName": { "type": "string" },
+        "role": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "avatarUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "email", "fullName"]
+    },
+    "workspaces": {
+      "title": "Research Workspaces",
+      "description": "Scientific laboratory research workspaces.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "slug": { "type": "string" },
+        "description": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "ownerId"]
+    },
+    "workspace_members": {
+      "title": "Workspace Memberships",
+      "description": "Role-based memberships linking users to workspaces.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "workspaceId": { "type": "string" },
+        "userId": { "type": "string" },
+        "email": { "type": "string" },
+        "fullName": { "type": "string" },
+        "role": { "type": "string", "enum": ["owner", "admin", "researcher", "viewer"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "workspaceId", "userId", "role"]
+    },
+    "entities": {
+      "title": "Research Graph Entities",
+      "description": "Scientific nodes (questions, papers, gaps, hypotheses, experiments, results, decisions, claims).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "workspaceId": { "type": "string" },
+        "type": { "type": "string" },
+        "code": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "metadata": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "workspaceId", "type", "code", "title"]
+    },
+    "relationships": {
+      "title": "Epistemic Relationships",
+      "description": "Provenance links connecting research graph entities.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "workspaceId": { "type": "string" },
+        "sourceId": { "type": "string" },
+        "sourceType": { "type": "string" },
+        "targetId": { "type": "string" },
+        "targetType": { "type": "string" },
+        "relationType": { "type": "string" },
+        "confidence": { "type": "number" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "workspaceId", "sourceId", "targetId", "relationType"]
+    }
+  }
+}

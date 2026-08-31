@@ -195,11 +195,50 @@ export type ViewMode =
   | 'canvas'
   | 'matrix'
   | 'gaps'
+  | 'benchmarks'
+  | 'manuscript'
   | 'claims'
   | 'evidence_narrative'
   | 'table'
   | WorkspaceViewMode
   | ProjectViewMode;
+
+export interface BenchmarkRun {
+  id: string;
+  code: string;
+  name: string;
+  experimentId: string;
+  hypothesisId?: string;
+  resultId?: string;
+  baseline: boolean;
+  paretoOptimal?: boolean;
+  status: 'completed' | 'running' | 'failed';
+  gitCommit: string;
+  hardware: {
+    device: string;
+    vram: string;
+    powerCapWatts?: number;
+  };
+  hyperparameters: Record<string, any>;
+  metrics: {
+    accuracy?: number; // e.g. 84.1 or 0.841
+    primaryMetricLabel: string;
+    primaryMetricValue: number;
+    latencyMs: number;
+    flopsG: number;
+    memoryMb: number;
+    powerWatts?: number;
+    throughputTokensOrFps?: number;
+    [key: string]: any;
+  };
+  lossConvergence?: Array<{
+    epochOrStep: number;
+    trainLoss: number;
+    valLoss: number;
+    metricValue: number;
+  }>;
+  createdAt: string;
+}
 
 export interface LiteratureMatrixRow {
   paperId: string;

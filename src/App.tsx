@@ -11,6 +11,8 @@ import { LiteratureMatrixView } from './components/synthesis/LiteratureMatrixVie
 import { GapDiscoveryView } from './components/synthesis/GapDiscoveryView';
 import { ClaimValidationView } from './components/synthesis/ClaimValidationView';
 import { EvidenceChainView } from './components/synthesis/EvidenceChainView';
+import { BenchmarkStudioView } from './components/synthesis/BenchmarkStudioView';
+import { ManuscriptComposerView } from './components/synthesis/ManuscriptComposerView';
 import { EntityTableView } from './components/table/EntityTableView';
 import { CreateNodeModal } from './components/modals/CreateNodeModal';
 import { CreateRelationshipModal } from './components/modals/CreateRelationshipModal';
@@ -115,6 +117,8 @@ export default function App() {
 
           {viewMode === 'matrix' && <LiteratureMatrixView />}
           {viewMode === 'gaps' && <GapDiscoveryView />}
+          {viewMode === 'benchmarks' && <BenchmarkStudioView />}
+          {viewMode === 'manuscript' && <ManuscriptComposerView />}
           {viewMode === 'claims' && <ClaimValidationView />}
           {viewMode === 'evidence_narrative' && <EvidenceChainView />}
           {(viewMode === 'table' || viewMode === 'projects' || viewMode === 'members' || viewMode === 'settings') && (

@@ -19,6 +19,8 @@ import {
   Users,
   FolderKanban,
   DownloadCloud,
+  Sliders,
+  FileText,
 } from 'lucide-react';
 import { useResearchStore } from '../../store/useResearchStore';
 import { useAuthStore } from '../../features/auth/store/authStore';
@@ -99,6 +101,8 @@ export const Header: React.FC = () => {
     { mode: 'canvas', label: 'Spatial Graph', icon: <Layers className="h-3.5 w-3.5" /> },
     { mode: 'matrix', label: 'Literature Matrix', icon: <BookOpen className="h-3.5 w-3.5" /> },
     { mode: 'gaps', label: 'AI Gap Discovery', icon: <AlertCircle className="h-3.5 w-3.5" /> },
+    { mode: 'benchmarks', label: 'Benchmark Studio', icon: <Sliders className="h-3.5 w-3.5" /> },
+    { mode: 'manuscript', label: 'Manuscript Draft', icon: <FileText className="h-3.5 w-3.5" /> },
     { mode: 'claims', label: 'Claim Auditor', icon: <ShieldCheck className="h-3.5 w-3.5" /> },
     { mode: 'evidence_narrative', label: 'Evidence Narrative', icon: <Sparkles className="h-3.5 w-3.5" /> },
     { mode: 'table', label: 'Entity Registry', icon: <Table className="h-3.5 w-3.5" /> },

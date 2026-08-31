@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Workspace } from '../../../types/research';
 import { workspaceApi, WorkspaceMember } from '../api/workspaceApi';
 import { apiClient } from '../../../services/api/client';
+import { useResearchStore } from '../../../store/useResearchStore';
 
 export interface WorkspaceState {
   workspaces: Workspace[];
@@ -49,6 +50,11 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         isLoading: false,
         error: null,
       });
+
+      if (active) {
+        get().fetchMembers(active.id);
+      }
+
       return workspaces;
     } catch (err: any) {
       set({
@@ -62,6 +68,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   setActiveWorkspace: (workspace: Workspace | null) => {
     if (workspace) {
       apiClient.setActiveWorkspace(workspace.id);
+      get().fetchMembers(workspace.id);
+      // Synchronize research store entities for this switched workspace
+      useResearchStore.getState().syncFromBackend();
     }
     set({ activeWorkspace: workspace });
   },
@@ -78,6 +87,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
     if (ws) {
       apiClient.setActiveWorkspace(ws.id);
+      get().fetchMembers(ws.id);
+      useResearchStore.getState().syncFromBackend();
       set({ activeWorkspace: ws });
     }
     return ws || null;
@@ -93,6 +104,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         activeWorkspace: created,
         isSaving: false,
       }));
+      get().fetchMembers(created.id);
       return created;
     } catch (err: any) {
       set({

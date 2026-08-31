@@ -1,0 +1,49 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check authentication
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if user owns the document or matches ID
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Workspaces
+    match /workspaces/{workspaceId} {
+      allow read: if true;
+      allow create, update, delete: if isAuthenticated();
+    }
+
+    // Workspace Members
+    match /workspace_members/{memberId} {
+      allow read: if true;
+      allow create, update, delete: if isAuthenticated();
+    }
+
+    // Research Graph Entities
+    match /entities/{entityId} {
+      allow read: if true;
+      allow create, update, delete: if isAuthenticated();
+    }
+
+    // Relationships
+    match /relationships/{relId} {
+      allow read: if true;
+      allow create, update, delete: if isAuthenticated();
+    }
+
+    // Fallback collection permissions
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

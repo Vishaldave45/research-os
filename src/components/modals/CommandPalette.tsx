@@ -16,6 +16,8 @@ import {
   FlaskConical,
   Activity,
   GitCommit,
+  Sliders,
+  FileText,
 } from 'lucide-react';
 import { useResearchStore } from '../../store/useResearchStore';
 import { EntityType, ViewMode } from '../../types/research';
@@ -87,6 +89,24 @@ export const CommandPalette: React.FC = () => {
       icon: <AlertCircle className="h-4 w-4 text-amber-600" />,
       handler: () => {
         setViewMode('gaps');
+        setCommandPaletteOpen(false);
+      },
+      category: 'Views',
+    },
+    {
+      label: 'Switch to Benchmark Studio & Pareto Frontier',
+      icon: <Sliders className="h-4 w-4 text-indigo-600" />,
+      handler: () => {
+        setViewMode('benchmarks');
+        setCommandPaletteOpen(false);
+      },
+      category: 'Views',
+    },
+    {
+      label: 'Switch to Paper Manuscript & LaTeX Draft Composer',
+      icon: <FileText className="h-4 w-4 text-blue-600" />,
+      handler: () => {
+        setViewMode('manuscript');
         setCommandPaletteOpen(false);
       },
       category: 'Views',
