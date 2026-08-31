@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   isRelationSemanticallyAllowed,
+  getAllowedRelations,
   wouldCreateCycle,
   ALLOWED_RELATION_RULES,
 } from '../utils/relationshipRules';
