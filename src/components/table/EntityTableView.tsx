@@ -94,6 +94,7 @@ export const EntityTableView: React.FC = () => {
   const badgeColors: Record<EntityType, string> = {
     question: 'bg-indigo-50 text-indigo-700 border-indigo-200',
     paper: 'bg-blue-50 text-blue-700 border-blue-200',
+    evidence: 'bg-amber-50 text-amber-700 border-amber-200',
     gap: 'bg-amber-50 text-amber-800 border-amber-200',
     hypothesis: 'bg-teal-50 text-teal-800 border-teal-200',
     experiment: 'bg-rose-50 text-rose-800 border-rose-200',

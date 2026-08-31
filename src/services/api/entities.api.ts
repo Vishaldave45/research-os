@@ -8,6 +8,8 @@ import {
   ResultEntity,
   DecisionEntity,
   ClaimEntity,
+  EvidenceEntity,
+  ResearchDomain,
   RelationshipLink,
 } from '../../types/research';
 
@@ -123,6 +125,40 @@ function mapDecision(d: any): DecisionEntity {
     createdAt: d.created_at || d.createdAt || new Date().toISOString(),
     updatedAt: d.updated_at || d.updatedAt,
     metadata: d.metadata || {},
+  };
+}
+
+function mapEvidence(e: any): EvidenceEntity {
+  return {
+    id: e.id,
+    code: e.code,
+    type: 'evidence',
+    title: e.title,
+    summary: e.summary || '',
+    evidenceType: e.evidence_type || e.evidenceType || 'empirical',
+    strength: e.strength || 'moderate',
+    sourceType: e.source_type || e.sourceType || 'paper',
+    sourceId: e.source_id || e.sourceId,
+    citationDoi: e.citation_doi || e.citationDoi,
+    confidenceScore: e.confidence_score !== undefined ? e.confidence_score : (e.confidenceScore !== undefined ? e.confidenceScore : 70),
+    createdAt: e.created_at || e.createdAt || new Date().toISOString(),
+    updatedAt: e.updated_at || e.updatedAt,
+    metadata: e.metadata_json || e.metadata || {},
+  };
+}
+
+function mapDomain(d: any): ResearchDomain {
+  return {
+    id: d.id,
+    workspaceId: d.workspace_id || d.workspaceId,
+    name: d.name,
+    slug: d.slug,
+    description: d.description,
+    colorBadge: d.color_badge || d.colorBadge || 'blue',
+    icon: d.icon || 'Layers',
+    projectCount: d.project_count || d.projectCount || 0,
+    createdAt: d.created_at || d.createdAt || new Date().toISOString(),
+    updatedAt: d.updated_at || d.updatedAt || new Date().toISOString(),
   };
 }
 
@@ -377,7 +413,6 @@ export const entitiesApi = {
   async deleteDecision(id: string): Promise<void> {
     return apiClient.delete(`/decisions/${id}`);
   },
-
   // Claims
   async listClaims(): Promise<ClaimEntity[]> {
     const data = await apiClient.get<any[]>('/claims');
@@ -407,6 +442,58 @@ export const entitiesApi = {
   },
   async deleteClaim(id: string): Promise<void> {
     return apiClient.delete(`/claims/${id}`);
+  },
+
+  // Evidence
+  async listEvidence(): Promise<EvidenceEntity[]> {
+    const data = await apiClient.get<any[]>('/evidence');
+    return data.map(mapEvidence);
+  },
+  async createEvidence(data: Partial<EvidenceEntity>): Promise<EvidenceEntity> {
+    const payload = {
+      title: data.title,
+      summary: data.summary,
+      evidence_type: data.evidenceType,
+      strength: data.strength,
+      source_type: data.sourceType,
+      source_id: data.sourceId,
+      citation_doi: data.citationDoi,
+      confidence_score: data.confidenceScore,
+      metadata_json: data.metadata,
+    };
+    const res = await apiClient.post('/evidence', payload);
+    return mapEvidence(res);
+  },
+  async updateEvidence(id: string, data: Partial<EvidenceEntity>): Promise<EvidenceEntity> {
+    const payload = {
+      title: data.title,
+      summary: data.summary,
+      evidence_type: data.evidenceType,
+      strength: data.strength,
+      source_type: data.sourceType,
+      source_id: data.sourceId,
+      citation_doi: data.citationDoi,
+      confidence_score: data.confidenceScore,
+      metadata_json: data.metadata,
+    };
+    const res = await apiClient.put(`/evidence/${id}`, payload);
+    return mapEvidence(res);
+  },
+  async deleteEvidence(id: string): Promise<void> {
+    return apiClient.delete(`/evidence/${id}`);
+  },
+
+  // Domains
+  async listDomains(workspaceId: string): Promise<ResearchDomain[]> {
+    const data = await apiClient.get<any[]>(`/workspaces/${workspaceId}/domains`);
+    return data.map(mapDomain);
+  },
+  async createDomain(workspaceId: string, data: { name: string; description?: string; color_badge?: string; icon?: string }): Promise<ResearchDomain> {
+    const res = await apiClient.post(`/workspaces/${workspaceId}/domains`, data);
+    return mapDomain(res);
+  },
+  async deleteDomain(domainId: string): Promise<void> {
+    return apiClient.delete(`/domains/${domainId}`);
   },
 
   // Relationships

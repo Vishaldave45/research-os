@@ -1,6 +1,7 @@
 export type EntityType =
   | 'question'
   | 'paper'
+  | 'evidence'
   | 'gap'
   | 'hypothesis'
   | 'experiment'
@@ -103,9 +104,34 @@ export interface ClaimEntity extends BaseEntity {
   status: 'proposed' | 'verified' | 'disputed' | 'retracted';
 }
 
+export interface EvidenceEntity extends BaseEntity {
+  type: 'evidence';
+  summary: string;
+  evidenceType: 'empirical' | 'theoretical' | 'benchmark' | 'anecdotal';
+  strength: 'strong' | 'moderate' | 'weak' | 'inconclusive';
+  sourceType: 'paper' | 'experiment' | 'result' | 'external_dataset';
+  sourceId?: string;
+  citationDoi?: string;
+  confidenceScore: number; // 0 to 100
+}
+
+export interface ResearchDomain {
+  id: string;
+  workspaceId: string;
+  name: string;
+  slug: string;
+  description?: string;
+  colorBadge: string;
+  icon: string;
+  projectCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type ResearchEntity =
   | ResearchQuestionEntity
   | PaperEntity
+  | EvidenceEntity
   | GapEntity
   | HypothesisEntity
   | ExperimentEntity

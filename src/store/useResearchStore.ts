@@ -17,6 +17,8 @@ import {
   ResultEntity,
   DecisionEntity,
   ClaimEntity,
+  EvidenceEntity,
+  ResearchDomain,
 } from '../types/research';
 import { DomainTemplate } from '../data/domainTemplates';
 import { entitiesApi } from '../services/api/entities.api';
@@ -33,8 +35,10 @@ const DEFAULT_WORKSPACE: Workspace = {
 
 interface ResearchStoreState {
   workspace: Workspace;
+  domains: ResearchDomain[];
   questions: ResearchQuestionEntity[];
   papers: PaperEntity[];
+  evidence: EvidenceEntity[];
   gaps: GapEntity[];
   hypotheses: HypothesisEntity[];
   experiments: ExperimentEntity[];
@@ -154,8 +158,10 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
   return {
     // State initialized empty; populated strictly via FastAPI / PostgreSQL
     workspace: DEFAULT_WORKSPACE,
+    domains: [],
     questions: [],
     papers: [],
+    evidence: [],
     gaps: [],
     hypotheses: [],
     experiments: [],
@@ -203,12 +209,13 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
     syncFromBackend: async () => {
       set({ isSyncing: true, error: null });
       try {
+        let activeWsId = apiClient.getActiveWorkspaceId();
         // Fetch user workspaces and activate primary workspace
         try {
           const workspaces = await apiClient.get<any[]>('/workspaces');
           if (Array.isArray(workspaces) && workspaces.length > 0) {
-            const currentWsId = apiClient.getActiveWorkspaceId();
-            const matchedWs = workspaces.find((w) => w.id === currentWsId) || workspaces[0];
+            const matchedWs = workspaces.find((w) => w.id === activeWsId) || workspaces[0];
+            activeWsId = matchedWs.id;
             apiClient.setActiveWorkspace(matchedWs.id);
             set({
               workspace: {
@@ -225,8 +232,10 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
         }
 
         const [
+          domains,
           questions,
           papers,
+          evidence,
           gaps,
           hypotheses,
           experiments,
@@ -235,8 +244,10 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
           claims,
           relationships,
         ] = await Promise.all([
+          activeWsId ? entitiesApi.listDomains(activeWsId).catch(() => []) : Promise.resolve([]),
           entitiesApi.listQuestions(),
           entitiesApi.listPapers(),
+          entitiesApi.listEvidence(),
           entitiesApi.listGaps(),
           entitiesApi.listHypotheses(),
           entitiesApi.listExperiments(),
@@ -247,8 +258,10 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
         ]);
 
         set({
+          domains: domains || [],
           questions: questions || [],
           papers: papers || [],
+          evidence: evidence || [],
           gaps: gaps || [],
           hypotheses: hypotheses || [],
           experiments: experiments || [],
@@ -256,6 +269,7 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
           decisions: decisions || [],
           claims: claims || [],
           relationships: relationships || [],
+          isSyncing: false,
           error: null,
         });
       } catch (err: any) {

@@ -62,12 +62,14 @@ async def get_current_user(
     if not dev_user:
         try:
             from app.core.security import get_password_hash
-            dev_user = await user_repo.create(
+            from app.models.user import User
+            new_dev_user = User(
                 email=dev_email,
                 hashed_password=get_password_hash("Researcher#123"),
                 full_name="Dr. Lead Researcher",
                 role="researcher",
             )
+            dev_user = await user_repo.create(new_dev_user)
             # Create default workspace for dev user if none exists
             from app.repositories.workspace_repository import WorkspaceRepository
             ws_repo = WorkspaceRepository(db)
@@ -91,11 +93,15 @@ async def get_current_user(
         return dev_user
 
     # Fallback to any existing user in DB
-    from sqlalchemy import select
-    res = await db.execute(select(User).limit(1))
-    first_user = res.scalars().first()
-    if first_user:
-        return first_user
+    if db is not None:
+        try:
+            from sqlalchemy import select
+            res = await db.execute(select(User).limit(1))
+            first_user = res.scalars().first()
+            if first_user:
+                return first_user
+        except Exception:
+            pass
 
     # Emergency fallback User instance
     return User(

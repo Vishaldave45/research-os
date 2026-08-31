@@ -15,6 +15,12 @@ class Project(TimeStampedUUIDModel):
         index=True,
         nullable=False,
     )
+    domain_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("research_domains.id", ondelete="SET NULL"),
+        index=True,
+        nullable=True,
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     slug: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
     research_area: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
@@ -27,4 +33,5 @@ class Project(TimeStampedUUIDModel):
     )
 
     workspace = relationship("Workspace", backref="projects")
+    domain = relationship("ResearchDomain", back_populates="projects")
     creator = relationship("User", backref="created_projects")

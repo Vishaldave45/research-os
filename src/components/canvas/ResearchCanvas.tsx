@@ -113,6 +113,7 @@ export const ResearchCanvas: React.FC = () => {
     const columnX: Record<EntityType, number> = {
       paper: 50,
       question: 50,
+      evidence: 260,
       gap: 480,
       hypothesis: 920,
       experiment: 1380,
@@ -124,6 +125,7 @@ export const ResearchCanvas: React.FC = () => {
     const typeCounters: Record<EntityType, number> = {
       paper: 0,
       question: 0,
+      evidence: 0,
       gap: 0,
       hypothesis: 0,
       experiment: 0,
@@ -152,12 +154,13 @@ export const ResearchCanvas: React.FC = () => {
         const typeIndexMap: Record<EntityType, { col: number; row: number }> = {
           question: { col: 0, row: 0 },
           paper: { col: 0, row: 1 },
-          gap: { col: 1, row: 0 },
-          hypothesis: { col: 1, row: 1 },
-          experiment: { col: 2, row: 0 },
-          result: { col: 2, row: 1 },
-          decision: { col: 3, row: 0 },
-          claim: { col: 3, row: 1 },
+          evidence: { col: 1, row: 0 },
+          gap: { col: 1, row: 1 },
+          hypothesis: { col: 2, row: 0 },
+          experiment: { col: 2, row: 1 },
+          result: { col: 3, row: 0 },
+          decision: { col: 3, row: 1 },
+          claim: { col: 4, row: 0 },
         };
         const pos = typeIndexMap[entity.type] || { col: 0, row: 0 };
         const indexInGroup = typeCounters[entity.type]++;

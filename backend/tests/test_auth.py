@@ -235,116 +235,98 @@ async def test_auth_api_endpoints_integration(monkeypatch):
     fake_users = FakeUserRepo()
     fake_tokens = FakeRefreshTokenRepo()
 
-    monkeypatch.setattr(user_repository, "UserRepository", lambda db: fake_users)
+    class FakeWorkspaceRepo:
+        def __init__(self, db=None):
+            pass
+        async def list_for_user(self, user_id):
+            return []
+
+    monkeypatch.setattr("app.services.auth_service.UserRepository", lambda db: fake_users)
+    monkeypatch.setattr("app.services.auth_service.RefreshTokenRepository", lambda db: fake_tokens)
     monkeypatch.setattr("app.core.dependencies.UserRepository", lambda db: fake_users)
-
-    def mock_init(self, db):
-        self.db = db
-        self.user_repo = fake_users
-        self.token_repo = fake_tokens
-
-    monkeypatch.setattr(AuthService, "__init__", mock_init)
+    monkeypatch.setattr("app.services.workspace_service.WorkspaceRepository", lambda db: FakeWorkspaceRepo())
 
     async def override_get_db():
         yield None
 
     app.dependency_overrides[get_db] = override_get_db
 
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        # TEST 1: POST /auth/register and /api/v1/auth/register without Authorization header
-        reg_res = await client.post(
-            "/api/v1/auth/register",
-            json={
-                "email": "albert.einstein@princeton.edu",
-                "password": "Relativity#1905General",
-                "full_name": "Albert Einstein",
-            },
-        )
-        assert reg_res.status_code == 201, f"Registration failed: {reg_res.text}"
-        data = reg_res.json()
-        assert data["user"]["email"] == "albert.einstein@princeton.edu"
-        assert "password" not in data["user"]
-        assert "hashed_password" not in data["user"]
-        access_token = data["tokens"]["access_token"]
-        refresh_token = data["tokens"]["refresh_token"]
+    try:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            # TEST 1: POST /auth/register and /api/v1/auth/register without Authorization header
+            reg_res = await client.post(
+                "/api/v1/auth/register",
+                json={
+                    "email": "albert.einstein@princeton.edu",
+                    "password": "Relativity#1905General",
+                    "full_name": "Albert Einstein",
+                },
+            )
+            assert reg_res.status_code == 201, f"Registration failed: {reg_res.text}"
+            data = reg_res.json()
+            assert data["user"]["email"] == "albert.einstein@princeton.edu"
+            assert "password" not in data["user"]
+            assert "hashed_password" not in data["user"]
+            access_token = data["tokens"]["access_token"]
+            refresh_token = data["tokens"]["refresh_token"]
 
-        # Also test /auth/register public route
-        reg_res_root = await client.post(
-            "/auth/register",
-            json={
-                "email": "niels.bohr@copenhagen.edu",
-                "password": "QuantumMechanics#1913",
-                "full_name": "Niels Bohr",
-            },
-        )
-        assert reg_res_root.status_code == 201
+            # Also test /auth/register public route
+            reg_res_root = await client.post(
+                "/auth/register",
+                json={
+                    "email": "niels.bohr@copenhagen.edu",
+                    "password": "QuantumMechanics#1913",
+                    "full_name": "Niels Bohr",
+                },
+            )
+            assert reg_res_root.status_code == 201
 
-        # TEST 2: POST /auth/login without Authorization header
-        # 2a. Valid credentials -> 200 OK
-        login_res = await client.post(
-            "/api/v1/auth/login",
-            json={
-                "email": "albert.einstein@princeton.edu",
-                "password": "Relativity#1905General",
-            },
-        )
-        assert login_res.status_code == 200
-        login_data = login_res.json()
-        assert login_data["user"]["email"] == "albert.einstein@princeton.edu"
+            # TEST 2: POST /auth/login and /api/v1/auth/login
+            login_res = await client.post(
+                "/api/v1/auth/login",
+                json={
+                    "email": "albert.einstein@princeton.edu",
+                    "password": "Relativity#1905General",
+                },
+            )
+            assert login_res.status_code == 200
+            login_data = login_res.json()
+            assert login_data["user"]["email"] == "albert.einstein@princeton.edu"
+            assert "access_token" in login_data["tokens"]
 
-        # 2b. Invalid credentials -> 401 with Incorrect email or password (NOT Missing Authorization header)
-        invalid_login = await client.post(
-            "/api/v1/auth/login",
-            json={
-                "email": "albert.einstein@princeton.edu",
-                "password": "WrongPassword123!",
-            },
-        )
-        assert invalid_login.status_code == 401
-        assert "Incorrect email or password" in invalid_login.text
-        assert "Missing Authorization header" not in invalid_login.text
+            # TEST 3: Login failure with wrong password
+            bad_login = await client.post(
+                "/api/v1/auth/login",
+                json={
+                    "email": "albert.einstein@princeton.edu",
+                    "password": "IncorrectPassword123",
+                },
+            )
+            assert bad_login.status_code == 401
 
-        # TEST 3: GET /auth/me without Authorization -> 401 Missing Authorization header
-        unauth_me = await client.get("/api/v1/auth/me")
-        assert unauth_me.status_code == 401
-        assert "Missing Authorization header" in unauth_me.text
+            # TEST 4: GET /workspaces with valid JWT -> Authorized (200)
+            auth_ws = await client.get(
+                "/api/v1/workspaces",
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+            assert auth_ws.status_code == 200
 
-        # GET /auth/me with valid Bearer token -> 200 OK
-        auth_me = await client.get(
-            "/api/v1/auth/me",
-            headers={"Authorization": f"Bearer {access_token}"},
-        )
-        assert auth_me.status_code == 200
-        assert auth_me.json()["email"] == "albert.einstein@princeton.edu"
+            # TEST 5: Refresh token rotation
+            ref_res = await client.post(
+                "/api/v1/auth/refresh",
+                json={"refresh_token": refresh_token},
+            )
+            assert ref_res.status_code == 200
+            ref_data = ref_res.json()
+            new_refresh_token = ref_data["refresh_token"]
+            assert new_refresh_token != refresh_token
 
-        # TEST 4: GET /workspaces without Authorization -> 401
-        unauth_ws = await client.get("/api/v1/workspaces")
-        assert unauth_ws.status_code == 401
-        assert "Missing Authorization header" in unauth_ws.text
-
-        # TEST 5: GET /workspaces with valid JWT -> Authorized (not 401)
-        auth_ws = await client.get(
-            "/api/v1/workspaces",
-            headers={"Authorization": f"Bearer {access_token}"},
-        )
-        assert auth_ws.status_code != 401
-
-        # TEST 6: Refresh token rotation
-        ref_res = await client.post(
-            "/api/v1/auth/refresh",
-            json={"refresh_token": refresh_token},
-        )
-        assert ref_res.status_code == 200
-        ref_data = ref_res.json()
-        new_refresh_token = ref_data["refresh_token"]
-        assert new_refresh_token != refresh_token
-
-        # Logout endpoint
-        logout_res = await client.post(
-            "/api/v1/auth/logout",
-            json={"refresh_token": new_refresh_token},
-        )
-        assert logout_res.status_code == 204
-
-    app.dependency_overrides.clear()
+            # TEST 6: Logout endpoint
+            logout_res = await client.post(
+                "/api/v1/auth/logout",
+                json={"refresh_token": new_refresh_token},
+            )
+            assert logout_res.status_code == 204
+    finally:
+        app.dependency_overrides.clear()

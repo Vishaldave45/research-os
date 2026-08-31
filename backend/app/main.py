@@ -25,6 +25,8 @@ from app.api.v1.decisions import router as decisions_router
 from app.api.v1.graph import router as graph_router
 from app.api.v1.relationships import router as relationships_router
 from app.api.v1.projects import router as projects_router
+from app.api.v1.domains import router as domains_router
+from app.api.v1.evidence import router as evidence_router
 from app.api.v1.synthesis import router as synthesis_router
 from app.api.v1.seed import router as seed_router
 
@@ -184,10 +186,13 @@ def create_application() -> FastAPI:
     application.include_router(auth_router)
     application.include_router(workspaces_router, prefix=settings.API_V1_STR)
     application.include_router(workspaces_router, prefix="/api")
+    application.include_router(domains_router, prefix=settings.API_V1_STR)
+    application.include_router(domains_router, prefix="/api")
     application.include_router(projects_router, prefix=settings.API_V1_STR)
     application.include_router(projects_router, prefix="/api")
     application.include_router(questions_router, prefix=settings.API_V1_STR)
     application.include_router(papers_router, prefix=settings.API_V1_STR)
+    application.include_router(evidence_router, prefix=settings.API_V1_STR)
     application.include_router(gaps_router, prefix=settings.API_V1_STR)
     application.include_router(hypotheses_router, prefix=settings.API_V1_STR)
     application.include_router(experiments_router, prefix=settings.API_V1_STR)
