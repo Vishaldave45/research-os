@@ -40,78 +40,43 @@ async def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> User:
-    """Validate bearer token if provided; otherwise fallback to default development researcher user."""
+    """Validate bearer token strictly; raise 401 UNAUTHORIZED if missing, invalid, or expired."""
     user_repo = UserRepository(db)
 
-    # 1. If valid credentials provided, validate JWT
-    if credentials and credentials.credentials:
-        token = credentials.credentials
-        payload = decode_jwt_token(token)
-        if payload and payload.get("type") == "access" and payload.get("sub"):
-            try:
-                user_id = uuid.UUID(payload.get("sub"))
-                user = await user_repo.get_by_id(user_id)
-                if user and user.is_active:
-                    return user
-            except Exception:
-                pass
+    if not credentials or not credentials.credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication credentials were not provided.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
-    # 2. Development / No-Auth Mode: Retrieve or create default active researcher
-    dev_email = "lead.researcher@lab.org"
-    dev_user = await user_repo.get_by_email(dev_email)
-    if not dev_user:
-        try:
-            from app.core.security import get_password_hash
-            from app.models.user import User
-            new_dev_user = User(
-                email=dev_email,
-                hashed_password=get_password_hash("Researcher#123"),
-                full_name="Dr. Lead Researcher",
-                role="researcher",
+    token = credentials.credentials
+    payload = decode_jwt_token(token)
+    if not payload or payload.get("type") != "access" or not payload.get("sub"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired access token.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    try:
+        user_id = uuid.UUID(payload.get("sub"))
+        user = await user_repo.get_by_id(user_id)
+        if not user or not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User account not found or inactive.",
+                headers={"WWW-Authenticate": "Bearer"},
             )
-            dev_user = await user_repo.create(new_dev_user)
-            # Create default workspace for dev user if none exists
-            from app.repositories.workspace_repository import WorkspaceRepository
-            ws_repo = WorkspaceRepository(db)
-            workspaces = await ws_repo.list_for_user(dev_user.id)
-            if not workspaces:
-                ws = await ws_repo.create(
-                    name="Deep Learning Laboratory",
-                    slug="deep-learning-lab",
-                    description="Primary research workspace for model compression & biomedical AI.",
-                    owner_id=dev_user.id,
-                )
-                from app.services.seed_service import SeedService
-                seed_service = SeedService(db)
-                await seed_service.seed_wce_dataset(ws.id, dev_user.id)
-        except Exception as e:
-            logger.warning("Could not auto-seed dev user/workspace: %s", str(e))
-            # Fallback query again if created concurrently
-            dev_user = await user_repo.get_by_email(dev_email)
-
-    if dev_user:
-        return dev_user
-
-    # Fallback to any existing user in DB
-    if db is not None:
-        try:
-            from sqlalchemy import select
-            res = await db.execute(select(User).limit(1))
-            first_user = res.scalars().first()
-            if first_user:
-                return first_user
-        except Exception:
-            pass
-
-    # Emergency fallback User instance
-    return User(
-        id=uuid.UUID("00000000-0000-0000-0000-000000000001"),
-        email="lead.researcher@lab.org",
-        hashed_password="hash",
-        full_name="Dr. Lead Researcher",
-        role="researcher",
-        is_active=True,
-    )
+        return user
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication failed. Please log in again.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 
 async def get_current_active_user(

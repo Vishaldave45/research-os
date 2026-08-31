@@ -1,6 +1,7 @@
 from typing import Annotated, Optional
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.config import settings
 from app.core.database import get_db
 from app.schemas.auth import (
     UserCreate,
@@ -116,7 +117,12 @@ async def oauth_dev_connect(
     dev_in: OAuthDevConnectRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    """Fast-connect researcher account simulating Google or GitHub OAuth identity."""
+    """Fast-connect researcher account simulating Google or GitHub OAuth identity (Disabled in Production)."""
+    if settings.ENVIRONMENT.lower() in ["production", "prod", "staging"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Development OAuth connector is disabled in production environments.",
+        )
     service = AuthService(db)
     user, tokens = await service.handle_oauth_dev_connect(
         provider=dev_in.provider,
