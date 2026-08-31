@@ -334,6 +334,8 @@ export const ResearchCanvas: React.FC = () => {
         minZoom={0.2}
         maxZoom={1.8}
         defaultEdgeOptions={{ type: 'custom' }}
+        onlyRenderVisibleElements={true}
+        elevateNodesOnSelect={true}
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#cbd5e1" />
         <Controls showInteractive={false} className="!bg-white !border-slate-200 !shadow-sm !rounded-xl" />
