@@ -1,29 +1,13 @@
-# ResearchOS Product Vision
+# ResearchOS — Product Vision & Core Architecture
 
-## Purpose
-ResearchOS is a dedicated **Research Operating System** designed to connect and preserve the research reasoning chain:
+## Executive Summary
+**ResearchOS** is an operating system for high-stakes scientific reasoning, literature synthesis, and empirical provenance. It models scientific exploration as a **strongly-typed, directed acyclic reasoning graph (DAG)**.
 
-```
-Evidence / Papers 
-       ↓
-Research Questions 
-       ↓
-Gaps 
-       ↓
-Hypotheses 
-       ↓
-Experiments 
-       ↓
-Results 
-       ↓
-Decisions 
-       ↓
-Claims / Publications
-```
+## Core Problem
+In traditional research workflows, provenance is fragmented across reference managers (Zotero), notebooks (Jupyter, Colab), experiment trackers (MLflow, W&B), and manuscripts (LaTeX, Overleaf). ResearchOS bridges this gap by maintaining the connective tissue between literature, questions, hypotheses, experiments, results, decisions, and claims.
 
-## Problem Statement
-AI and scientific researchers spend significant time re-discovering why previous experiments were run, what hypotheses motivated specific parameter choices, and how conclusions were justified. Traditional tools track the *what* (MLflow runs, Git commits, Zotero citations) but fail to capture the *why* (the conceptual reasoning graph).
-
-## Target Audience
-- Primary: Small AI/ML research teams (2–10 members) collaborating on iterative, hypothesis-driven projects.
-- Secondary: Principal Investigators (PIs), research supervisors, and new onboarding researchers needing full backward auditability of past findings.
+## Architectural Tenets
+1. **Modular Monolith First**: A single, clean, highly modular FastAPI backend paired with a modern React + TypeScript frontend.
+2. **PostgreSQL as Source of Truth**: All domain entities and directed DAG relationships are strictly persisted in PostgreSQL with ACID guarantees and multi-tenant row-level isolation.
+3. **Traceability as First-Class Citizen**: Every scientific assertion or architectural decision can be deterministically traced backward to its empirical evidence and literature roots.
+4. **AI as an Evidence-Grounded Reasoning Layer**: AI generates proposals and audits evidence, but never invents ground truth or creates unapproved entities.

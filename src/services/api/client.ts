@@ -905,7 +905,47 @@ class ApiClient {
       parsedBody = options.body;
     }
 
-    return (await this.handleInternalRoute(endpoint, method, parsedBody, headers)) as T;
+    // Attempt authoritative backend HTTP fetch first
+    const apiUrl = endpoint.startsWith('/api') || endpoint.startsWith('/auth') || endpoint.startsWith('/health')
+      ? endpoint
+      : `/api/v1${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+
+    try {
+      const response = await fetch(apiUrl, {
+        method,
+        headers,
+        body: options.body,
+      });
+
+      if (response.ok) {
+        if (response.status === 204) return null as T;
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          return (await response.json()) as T;
+        }
+        return (await response.text()) as unknown as T;
+      }
+
+      if (response.status === 401 && !isPublicAuth) {
+        // Token expired or invalid
+        this.clearTokens();
+        throw { message: 'Authentication required. Please log in again.', status: 401 };
+      }
+
+      // If backend returned error response, extract detail
+      let errDetail = 'Request failed';
+      try {
+        const errJson = await response.json();
+        errDetail = errJson.detail || errJson.message || JSON.stringify(errJson);
+      } catch {
+        errDetail = await response.text();
+      }
+      throw { message: errDetail, status: response.status };
+    } catch (networkErr: any) {
+      if (networkErr.status) throw networkErr;
+      // If network unreachable, smoothly fallback to internal router
+      return (await this.handleInternalRoute(endpoint, method, parsedBody, headers)) as T;
+    }
   }
 
   public get<T = any>(endpoint: string, headers?: Record<string, string>) {
