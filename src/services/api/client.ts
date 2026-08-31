@@ -118,13 +118,20 @@ class ApiClient {
       body: options.body,
     });
 
+    // Read the response stream exactly ONCE into raw text
+    const rawText = await response.text();
+    let parsedData: any = null;
+    if (rawText && rawText.trim().length > 0) {
+      try {
+        parsedData = JSON.parse(rawText);
+      } catch {
+        parsedData = rawText;
+      }
+    }
+
     if (response.ok) {
       if (response.status === 204) return null as T;
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        return (await response.json()) as T;
-      }
-      return (await response.text()) as unknown as T;
+      return (parsedData !== null ? parsedData : rawText) as T;
     }
 
     if (response.status === 401 && !isPublicAuth) {
@@ -133,13 +140,15 @@ class ApiClient {
     }
 
     let errDetail = 'Request failed';
-    try {
-      const errJson = await response.json();
-      errDetail = errJson.detail || errJson.message || errJson.error?.message || JSON.stringify(errJson);
-    } catch {
-      errDetail = await response.text();
+    if (parsedData && typeof parsedData === 'object') {
+      errDetail = parsedData.detail || parsedData.message || parsedData.error?.message || JSON.stringify(parsedData);
+    } else if (typeof parsedData === 'string' && parsedData.trim().length > 0) {
+      errDetail = parsedData;
+    } else if (response.statusText) {
+      errDetail = response.statusText;
     }
-    throw { message: errDetail, status: response.status };
+
+    throw { message: errDetail, status: response.status, data: parsedData };
   }
 
   public get<T = any>(endpoint: string, headers?: Record<string, string>): Promise<T> {
