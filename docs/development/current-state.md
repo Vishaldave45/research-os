@@ -1,7 +1,8 @@
 # Current Repository & Architecture State (Milestone Baseline Audit)
 
 ## Baseline Summary
-- **Release Version**: `v0.1.0` (commit `5f53811` on `main`/`dev`)
+- **Official GitHub Release**: `v0.1.0 — Foundation` (Commit `92c42f7`)
+- **Active Development Branch**: `dev` (Currently tracking toward `v0.2.0 — Research Core`)
 - **Backend Architecture**: FastAPI + SQLAlchemy 2.0 Async + PostgreSQL 16 + Alembic (`c3f5a1b4d7e8`)
 - **Frontend Architecture**: React 19 + Vite 6 + Tailwind v4 + TypeScript 5.8 + Zustand + @xyflow/react
 - **Test Suite**: 31 Backend Pytest Suites Passing (100% against live PostgreSQL)
