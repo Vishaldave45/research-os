@@ -672,5 +672,16 @@ export const entitiesApi = {
     if (entityType) params.append('entity_type', entityType);
     return apiClient.get<any[]>(`/collaboration/audit-logs?${params.toString()}`);
   },
+
+  // PublicationOS
+  async exportManuscript(data?: { target_format?: string; template_style?: string; include_traceability_matrix?: boolean }): Promise<any> {
+    return apiClient.post('/manuscripts/export', data || {});
+  },
+  async getBibtex(): Promise<string> {
+    return apiClient.get('/manuscripts/bibtex');
+  },
+  async getLatex(): Promise<string> {
+    return apiClient.get('/manuscripts/latex');
+  },
 };
 
