@@ -8,10 +8,13 @@ import { Header } from './components/layout/Header';
 import { ResearchCanvas } from './components/canvas/ResearchCanvas';
 import { NodeInspector } from './components/inspector/NodeInspector';
 import { LiteratureMatrixView } from './components/synthesis/LiteratureMatrixView';
+import { LiteratureHubView } from './components/synthesis/LiteratureHubView';
 import { GapDiscoveryView } from './components/synthesis/GapDiscoveryView';
 import { ClaimValidationView } from './components/synthesis/ClaimValidationView';
 import { EvidenceChainView } from './components/synthesis/EvidenceChainView';
 import { BenchmarkStudioView } from './components/synthesis/BenchmarkStudioView';
+import { ComputeOrchestratorView } from './components/synthesis/ComputeOrchestratorView';
+import { TraceabilityExplorerView } from './components/synthesis/TraceabilityExplorerView';
 import { ManuscriptComposerView } from './components/synthesis/ManuscriptComposerView';
 import { EntityTableView } from './components/table/EntityTableView';
 import { CreateNodeModal } from './components/modals/CreateNodeModal';
@@ -116,8 +119,11 @@ export default function App() {
           )}
 
           {viewMode === 'matrix' && <LiteratureMatrixView />}
+          {viewMode === 'literature' && <LiteratureHubView />}
           {viewMode === 'gaps' && <GapDiscoveryView />}
           {viewMode === 'benchmarks' && <BenchmarkStudioView />}
+          {viewMode === 'compute' && <ComputeOrchestratorView />}
+          {viewMode === 'traceability' && <TraceabilityExplorerView />}
           {viewMode === 'manuscript' && <ManuscriptComposerView />}
           {viewMode === 'claims' && <ClaimValidationView />}
           {viewMode === 'evidence_narrative' && <EvidenceChainView />}

@@ -194,8 +194,11 @@ export type ProjectViewMode =
 export type ViewMode =
   | 'canvas'
   | 'matrix'
+  | 'literature'
   | 'gaps'
   | 'benchmarks'
+  | 'compute'
+  | 'traceability'
   | 'manuscript'
   | 'claims'
   | 'evidence_narrative'

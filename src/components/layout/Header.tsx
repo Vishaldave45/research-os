@@ -21,6 +21,9 @@ import {
   DownloadCloud,
   Sliders,
   FileText,
+  Cpu,
+  GitFork,
+  BookMarked,
 } from 'lucide-react';
 import { useResearchStore } from '../../store/useResearchStore';
 import { useAuthStore } from '../../features/auth/store/authStore';
@@ -99,9 +102,12 @@ export const Header: React.FC = () => {
 
   const navItems: Array<{ mode: ViewMode; label: string; icon: React.ReactNode }> = [
     { mode: 'canvas', label: 'Spatial Graph', icon: <Layers className="h-3.5 w-3.5" /> },
-    { mode: 'matrix', label: 'Literature Matrix', icon: <BookOpen className="h-3.5 w-3.5" /> },
+    { mode: 'literature', label: 'Literature Hub', icon: <BookMarked className="h-3.5 w-3.5" /> },
+    { mode: 'matrix', label: 'Evidence Matrix', icon: <BookOpen className="h-3.5 w-3.5" /> },
     { mode: 'gaps', label: 'AI Gap Discovery', icon: <AlertCircle className="h-3.5 w-3.5" /> },
     { mode: 'benchmarks', label: 'Benchmark Studio', icon: <Sliders className="h-3.5 w-3.5" /> },
+    { mode: 'compute', label: 'Compute & Colab', icon: <Cpu className="h-3.5 w-3.5" /> },
+    { mode: 'traceability', label: 'Deep Traceability', icon: <GitFork className="h-3.5 w-3.5" /> },
     { mode: 'manuscript', label: 'Manuscript Draft', icon: <FileText className="h-3.5 w-3.5" /> },
     { mode: 'claims', label: 'Claim Auditor', icon: <ShieldCheck className="h-3.5 w-3.5" /> },
     { mode: 'evidence_narrative', label: 'Evidence Narrative', icon: <Sparkles className="h-3.5 w-3.5" /> },
