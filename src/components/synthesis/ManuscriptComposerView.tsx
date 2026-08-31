@@ -163,12 +163,10 @@ ${decisions
 ---
 
 ## 6. Verified Scientific Claims & Conclusion
-We substantiate the following publication claims backed by full graph provenance:
-
-${claims
+${claims.length === 0 ? `> ⚠️ **Provenance Notice:** No verified claims registered in this workspace yet. Execute experiment benchmarks and validate results to substantiate publication claims.` : claims
   .map(
     (c) =>
-      `1. **[${c.code}]** ${c.statement} *(Empirical Confidence: ${Math.round((c.confidenceScore || 0.94) * 100)}%, Status: ${c.status.toUpperCase()})*`
+      `1. **[${c.code}]** ${c.statement} *(${c.status === 'verified' ? '✅ Verified' : '⚠️ Unverified Proposed Claim'}, Confidence: ${Math.round((c.confidenceScore || 0.5) * 100)}%)*`
   )
   .join('\n')}
 
