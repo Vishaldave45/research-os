@@ -107,10 +107,19 @@ class ApiClient {
 
     const method = (options.method || 'GET').toUpperCase();
 
-    // Standardize URL targeting Vite reverse proxy (/api -> http://localhost:8000/api/v1)
-    const apiUrl = endpoint.startsWith('/api') || endpoint.startsWith('/auth') || endpoint.startsWith('/health')
-      ? endpoint
-      : `/api/v1${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+    // Standardize URL: All authoritative REST APIs belong under /api/v1
+    let normalizedPath = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    let apiUrl: string;
+
+    if (normalizedPath.startsWith('/health') || normalizedPath.startsWith('/ready') || normalizedPath.startsWith('/auth/oauth/popup-callback')) {
+      apiUrl = normalizedPath;
+    } else if (normalizedPath.startsWith('/api/v1')) {
+      apiUrl = normalizedPath;
+    } else if (normalizedPath.startsWith('/api')) {
+      apiUrl = `/api/v1${normalizedPath.replace(/^\/api/, '')}`;
+    } else {
+      apiUrl = `/api/v1${normalizedPath}`;
+    }
 
     const response = await fetch(apiUrl, {
       method,
@@ -143,7 +152,11 @@ class ApiClient {
     if (parsedData && typeof parsedData === 'object') {
       errDetail = parsedData.detail || parsedData.message || parsedData.error?.message || JSON.stringify(parsedData);
     } else if (typeof parsedData === 'string' && parsedData.trim().length > 0) {
-      errDetail = parsedData;
+      if (parsedData.includes('<!DOCTYPE') || parsedData.includes('<html')) {
+        errDetail = `API endpoint error (${response.status}): ${method} ${apiUrl} - ${response.statusText || 'Not Found'}`;
+      } else {
+        errDetail = parsedData;
+      }
     } else if (response.statusText) {
       errDetail = response.statusText;
     }

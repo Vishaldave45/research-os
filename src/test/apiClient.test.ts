@@ -85,4 +85,36 @@ describe('ApiClient Single Response Body Consumption & Error Handling', () => {
       expect(err.message).not.toContain('Body has already been consumed');
     }
   });
+
+  it('standardizes endpoints under /api/v1 prefix automatically', async () => {
+    let capturedUrl = '';
+    vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async (url) => {
+      capturedUrl = url.toString();
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    });
+
+    await apiClient.post('/auth/oauth/dev-connect', { provider: 'google' });
+    expect(capturedUrl).toBe('/api/v1/auth/oauth/dev-connect');
+  });
+
+  it('formats HTML 404 errors cleanly instead of dumping raw markup', async () => {
+    const html404 = '<!DOCTYPE html><html><body><h1>Page not found (404)</h1></body></html>';
+    const mockResponse = new Response(html404, {
+      status: 404,
+      statusText: 'Not Found',
+      headers: { 'Content-Type': 'text/html' },
+    });
+
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(mockResponse);
+
+    try {
+      await apiClient.get('/non-existent-route');
+      expect.fail('Expected error was not thrown');
+    } catch (err: any) {
+      expect(err.status).toBe(404);
+      expect(err.message).toContain('API endpoint error (404)');
+      expect(err.message).toContain('/api/v1/non-existent-route');
+      expect(err.message).not.toContain('<!DOCTYPE');
+    }
+  });
 });
