@@ -2,6 +2,8 @@ export type EntityType =
   | 'question'
   | 'paper'
   | 'evidence'
+  | 'dataset'
+  | 'model'
   | 'gap'
   | 'hypothesis'
   | 'experiment'
@@ -115,6 +117,31 @@ export interface EvidenceEntity extends BaseEntity {
   confidenceScore: number; // 0 to 100
 }
 
+export interface DatasetEntity extends BaseEntity {
+  type: 'dataset';
+  version: string;
+  modality: 'image' | 'tabular' | 'text' | 'audio' | 'multimodal';
+  description?: string;
+  sourceUrl?: string;
+  license?: string;
+  sampleCount?: number;
+  sizeBytes?: number;
+  preprocessingSpec?: Record<string, any>;
+  splitSpec?: Record<string, any>;
+}
+
+export interface ModelEntity extends BaseEntity {
+  type: 'model';
+  version: string;
+  architecture: string;
+  framework: 'pytorch' | 'tensorflow' | 'jax' | 'onnx';
+  parameterCount?: number;
+  checkpointUrl?: string;
+  codeCommitHash?: string;
+  description?: string;
+  hyperparameters?: Record<string, any>;
+}
+
 export interface ResearchDomain {
   id: string;
   workspaceId: string;
@@ -132,6 +159,8 @@ export type ResearchEntity =
   | ResearchQuestionEntity
   | PaperEntity
   | EvidenceEntity
+  | DatasetEntity
+  | ModelEntity
   | GapEntity
   | HypothesisEntity
   | ExperimentEntity

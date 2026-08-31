@@ -9,6 +9,8 @@ import {
   DecisionEntity,
   ClaimEntity,
   EvidenceEntity,
+  DatasetEntity,
+  ModelEntity,
   ResearchDomain,
   RelationshipLink,
 } from '../../types/research';
@@ -174,6 +176,47 @@ function mapClaim(c: any): ClaimEntity {
     createdAt: c.created_at || c.createdAt || new Date().toISOString(),
     updatedAt: c.updated_at || c.updatedAt,
     metadata: c.metadata || {},
+  };
+}
+
+function mapDataset(d: any): DatasetEntity {
+  return {
+    id: d.id,
+    code: d.slug || d.id,
+    type: 'dataset',
+    title: d.name,
+    version: d.version || '1.0.0',
+    modality: d.modality || 'image',
+    description: d.description,
+    sourceUrl: d.source_url || d.sourceUrl,
+    license: d.license,
+    sampleCount: d.sample_count || d.sampleCount,
+    sizeBytes: d.size_bytes || d.sizeBytes,
+    preprocessingSpec: d.preprocessing_spec || d.preprocessingSpec || {},
+    splitSpec: d.split_spec || d.splitSpec || {},
+    createdAt: d.created_at || d.createdAt || new Date().toISOString(),
+    updatedAt: d.updated_at || d.updatedAt,
+    metadata: d.metadata_json || d.metadata || {},
+  };
+}
+
+function mapModel(m: any): ModelEntity {
+  return {
+    id: m.id,
+    code: m.slug || m.id,
+    type: 'model',
+    title: m.name,
+    version: m.version || '1.0.0',
+    architecture: m.architecture,
+    framework: m.framework || 'pytorch',
+    parameterCount: m.parameter_count || m.parameterCount,
+    checkpointUrl: m.checkpoint_url || m.checkpointUrl,
+    codeCommitHash: m.code_commit_hash || m.codeCommitHash,
+    description: m.description,
+    hyperparameters: m.hyperparameters || {},
+    createdAt: m.created_at || m.createdAt || new Date().toISOString(),
+    updatedAt: m.updated_at || m.updatedAt,
+    metadata: m.metadata_json || m.metadata || {},
   };
 }
 
@@ -494,6 +537,57 @@ export const entitiesApi = {
   },
   async deleteDomain(domainId: string): Promise<void> {
     return apiClient.delete(`/domains/${domainId}`);
+  },
+
+  // Datasets
+  async listDatasets(): Promise<DatasetEntity[]> {
+    const data = await apiClient.get<any[]>('/datasets');
+    return data.map(mapDataset);
+  },
+  async createDataset(data: Partial<DatasetEntity>): Promise<DatasetEntity> {
+    const payload = {
+      name: data.title || (data as any).name,
+      version: data.version || '1.0.0',
+      modality: data.modality || 'image',
+      description: data.description,
+      source_url: data.sourceUrl,
+      license: data.license,
+      sample_count: data.sampleCount,
+      size_bytes: data.sizeBytes,
+      preprocessing_spec: data.preprocessingSpec,
+      split_spec: data.splitSpec,
+      metadata_json: data.metadata,
+    };
+    const res = await apiClient.post('/datasets', payload);
+    return mapDataset(res);
+  },
+  async deleteDataset(id: string): Promise<void> {
+    return apiClient.delete(`/datasets/${id}`);
+  },
+
+  // Models
+  async listModels(): Promise<ModelEntity[]> {
+    const data = await apiClient.get<any[]>('/models');
+    return data.map(mapModel);
+  },
+  async createModel(data: Partial<ModelEntity>): Promise<ModelEntity> {
+    const payload = {
+      name: data.title || (data as any).name,
+      version: data.version || '1.0.0',
+      architecture: data.architecture,
+      framework: data.framework || 'pytorch',
+      parameter_count: data.parameterCount,
+      checkpoint_url: data.checkpointUrl,
+      code_commit_hash: data.codeCommitHash,
+      description: data.description,
+      hyperparameters: data.hyperparameters,
+      metadata_json: data.metadata,
+    };
+    const res = await apiClient.post('/models', payload);
+    return mapModel(res);
+  },
+  async deleteModel(id: string): Promise<void> {
+    return apiClient.delete(`/models/${id}`);
   },
 
   // Relationships

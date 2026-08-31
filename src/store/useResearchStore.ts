@@ -18,6 +18,8 @@ import {
   DecisionEntity,
   ClaimEntity,
   EvidenceEntity,
+  DatasetEntity,
+  ModelEntity,
   ResearchDomain,
 } from '../types/research';
 import { DomainTemplate } from '../data/domainTemplates';
@@ -36,6 +38,8 @@ const DEFAULT_WORKSPACE: Workspace = {
 interface ResearchStoreState {
   workspace: Workspace;
   domains: ResearchDomain[];
+  datasets: DatasetEntity[];
+  models: ModelEntity[];
   questions: ResearchQuestionEntity[];
   papers: PaperEntity[];
   evidence: EvidenceEntity[];
@@ -159,6 +163,8 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
     // State initialized empty; populated strictly via FastAPI / PostgreSQL
     workspace: DEFAULT_WORKSPACE,
     domains: [],
+    datasets: [],
+    models: [],
     questions: [],
     papers: [],
     evidence: [],
@@ -233,6 +239,8 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
 
         const [
           domains,
+          datasets,
+          models,
           questions,
           papers,
           evidence,
@@ -245,6 +253,8 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
           relationships,
         ] = await Promise.all([
           activeWsId ? entitiesApi.listDomains(activeWsId).catch(() => []) : Promise.resolve([]),
+          entitiesApi.listDatasets().catch(() => []),
+          entitiesApi.listModels().catch(() => []),
           entitiesApi.listQuestions(),
           entitiesApi.listPapers(),
           entitiesApi.listEvidence(),
@@ -259,6 +269,8 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
 
         set({
           domains: domains || [],
+          datasets: datasets || [],
+          models: models || [],
           questions: questions || [],
           papers: papers || [],
           evidence: evidence || [],

@@ -6,6 +6,8 @@ from app.models.project import Project
 from app.models.research_question import ResearchQuestion
 from app.models.paper import Paper
 from app.models.evidence import Evidence
+from app.models.dataset import Dataset
+from app.models.model_registry import ModelRegistry
 from app.models.gap import Gap
 from app.models.hypothesis import Hypothesis
 from app.models.experiment import Experiment
@@ -26,6 +28,8 @@ __all__ = [
     "ResearchQuestion",
     "Paper",
     "Evidence",
+    "Dataset",
+    "ModelRegistry",
     "Gap",
     "Hypothesis",
     "Experiment",

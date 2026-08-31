@@ -95,6 +95,8 @@ export const EntityTableView: React.FC = () => {
     question: 'bg-indigo-50 text-indigo-700 border-indigo-200',
     paper: 'bg-blue-50 text-blue-700 border-blue-200',
     evidence: 'bg-amber-50 text-amber-700 border-amber-200',
+    dataset: 'bg-violet-50 text-violet-700 border-violet-200',
+    model: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200',
     gap: 'bg-amber-50 text-amber-800 border-amber-200',
     hypothesis: 'bg-teal-50 text-teal-800 border-teal-200',
     experiment: 'bg-rose-50 text-rose-800 border-rose-200',
