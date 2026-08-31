@@ -51,13 +51,8 @@ describe('Semantic Graph Ontology & Relationship Rules', () => {
       },
     ];
 
-    // Self-loop is a cycle
     expect(wouldCreateCycle(existingEdges, 'A', 'A')).toBe(true);
-
-    // C -> A would create A -> B -> C -> A cycle
     expect(wouldCreateCycle(existingEdges, 'C', 'A')).toBe(true);
-
-    // A -> D does not create a cycle
     expect(wouldCreateCycle(existingEdges, 'A', 'D')).toBe(false);
   });
 });
