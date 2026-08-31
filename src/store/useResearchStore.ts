@@ -410,6 +410,18 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
             createdOnServer = await entitiesApi.createPaper(entity);
             set((state) => ({ papers: [createdOnServer as PaperEntity, ...state.papers] }));
             break;
+          case 'evidence':
+            createdOnServer = await entitiesApi.createEvidence(entity);
+            set((state) => ({ evidence: [createdOnServer as EvidenceEntity, ...state.evidence] }));
+            break;
+          case 'dataset':
+            createdOnServer = await entitiesApi.createDataset(entity);
+            set((state) => ({ datasets: [createdOnServer as DatasetEntity, ...state.datasets] }));
+            break;
+          case 'model':
+            createdOnServer = await entitiesApi.createModel(entity);
+            set((state) => ({ models: [createdOnServer as ModelEntity, ...state.models] }));
+            break;
           case 'gap':
             createdOnServer = await entitiesApi.createGap(entity);
             set((state) => ({ gaps: [createdOnServer as GapEntity, ...state.gaps] }));
@@ -468,6 +480,12 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
             updatedOnServer = await entitiesApi.updatePaper(entity.id, entity);
             set((state) => ({
               papers: state.papers.map((p) => (p.id === entity.id ? (updatedOnServer as PaperEntity) : p)),
+            }));
+            break;
+          case 'evidence':
+            updatedOnServer = await entitiesApi.updateEvidence(entity.id, entity);
+            set((state) => ({
+              evidence: state.evidence.map((ev) => (ev.id === entity.id ? (updatedOnServer as EvidenceEntity) : ev)),
             }));
             break;
           case 'gap':
@@ -529,6 +547,18 @@ export const useResearchStore = create<ResearchStoreState>((set, get) => {
           case 'paper':
             await entitiesApi.deletePaper(id);
             set((state) => ({ papers: state.papers.filter((p) => p.id !== id) }));
+            break;
+          case 'evidence':
+            await entitiesApi.deleteEvidence(id);
+            set((state) => ({ evidence: state.evidence.filter((ev) => ev.id !== id) }));
+            break;
+          case 'dataset':
+            await entitiesApi.deleteDataset(id);
+            set((state) => ({ datasets: state.datasets.filter((d) => d.id !== id) }));
+            break;
+          case 'model':
+            await entitiesApi.deleteModel(id);
+            set((state) => ({ models: state.models.filter((m) => m.id !== id) }));
             break;
           case 'gap':
             await entitiesApi.deleteGap(id);

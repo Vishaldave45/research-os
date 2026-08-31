@@ -140,6 +140,37 @@ export const CreateNodeModal: React.FC = () => {
           rationale: statementOrDesc || rationale || title,
         };
         break;
+      case 'evidence':
+        newEntity = {
+          ...base,
+          type: 'evidence',
+          summary: statementOrDesc || title,
+          evidenceType: 'empirical',
+          strength: 'strong',
+          sourceType: 'paper',
+          confidenceScore: 85,
+        };
+        break;
+      case 'dataset':
+        newEntity = {
+          ...base,
+          type: 'dataset',
+          version: '1.0.0',
+          modality: 'image',
+          description: statementOrDesc || title,
+          sampleCount: 1000,
+        };
+        break;
+      case 'model':
+        newEntity = {
+          ...base,
+          type: 'model',
+          version: '1.0.0',
+          architecture: title || 'CustomBackbone',
+          framework: 'pytorch',
+          description: statementOrDesc || title,
+        };
+        break;
       case 'claim':
         newEntity = {
           ...base,
@@ -211,6 +242,9 @@ export const CreateNodeModal: React.FC = () => {
                 [
                   'question',
                   'paper',
+                  'evidence',
+                  'dataset',
+                  'model',
                   'gap',
                   'hypothesis',
                   'experiment',

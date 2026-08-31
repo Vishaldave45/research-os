@@ -56,6 +56,9 @@ export const ResearchCanvas: React.FC = () => {
   const {
     questions,
     papers,
+    evidence,
+    datasets,
+    models,
     gaps,
     hypotheses,
     experiments,
@@ -82,6 +85,9 @@ export const ResearchCanvas: React.FC = () => {
     const allEntities: ResearchEntity[] = [
       ...questions,
       ...papers,
+      ...evidence,
+      ...datasets,
+      ...models,
       ...gaps,
       ...hypotheses,
       ...experiments,
@@ -288,6 +294,9 @@ export const ResearchCanvas: React.FC = () => {
       count:
         questions.length +
         papers.length +
+        evidence.length +
+        datasets.length +
+        models.length +
         gaps.length +
         hypotheses.length +
         experiments.length +
@@ -297,6 +306,9 @@ export const ResearchCanvas: React.FC = () => {
     },
     { key: 'question', label: 'Questions', count: questions.length },
     { key: 'paper', label: 'Papers', count: papers.length },
+    { key: 'evidence', label: 'Evidence', count: evidence.length },
+    { key: 'dataset', label: 'Datasets', count: datasets.length },
+    { key: 'model', label: 'Models', count: models.length },
     { key: 'gap', label: 'Gaps', count: gaps.length },
     { key: 'hypothesis', label: 'Hypotheses', count: hypotheses.length },
     { key: 'experiment', label: 'Experiments', count: experiments.length },

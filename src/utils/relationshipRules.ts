@@ -11,6 +11,12 @@ export const ALLOWED_RELATION_RULES: AllowedRelationRule[] = [
   // Paper relationships
   {
     sourceType: 'paper',
+    targetType: 'evidence',
+    allowedRelations: ['produces', 'informs'],
+    description: 'Literature paper provides or produces evidence items',
+  },
+  {
+    sourceType: 'paper',
     targetType: 'question',
     allowedRelations: ['informs', 'motivates'],
     description: 'Literature informs or motivates a research question',
@@ -38,6 +44,40 @@ export const ALLOWED_RELATION_RULES: AllowedRelationRule[] = [
     targetType: 'claim',
     allowedRelations: ['cites', 'supports', 'refutes'],
     description: 'Literature substantiates or refutes a scientific claim',
+  },
+
+  // Evidence relationships
+  {
+    sourceType: 'evidence',
+    targetType: 'gap',
+    allowedRelations: ['motivates', 'informs'],
+    description: 'Evidence item motivates or informs a literature gap',
+  },
+  {
+    sourceType: 'evidence',
+    targetType: 'hypothesis',
+    allowedRelations: ['motivates', 'informs'],
+    description: 'Evidence item motivates or informs a hypothesis',
+  },
+  {
+    sourceType: 'evidence',
+    targetType: 'claim',
+    allowedRelations: ['supports', 'refutes', 'validates'],
+    description: 'Evidence directly substantiates, validates, or refutes a scientific claim',
+  },
+
+  // Dataset & Model relationships
+  {
+    sourceType: 'dataset',
+    targetType: 'experiment',
+    allowedRelations: ['informs', 'depends_on'],
+    description: 'Dataset is utilized by a benchmark experiment',
+  },
+  {
+    sourceType: 'model',
+    targetType: 'experiment',
+    allowedRelations: ['informs', 'tests'],
+    description: 'Model architecture is evaluated in an experimental protocol',
   },
 
   // Question relationships
