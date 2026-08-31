@@ -1,0 +1,48 @@
+{
+  "experiment_code": "E-003",
+  "result_code": "R-003",
+  "title": "VGG16-Folded-8 Stage Collapse Benchmark",
+  "description": "Progressive depth reduction on VGG16 reducing 13 conv layers down to 8 folded stages on Kvasir-Capsule.",
+  "seed": 42,
+  "hardware": "NVIDIA RTX 4090 / Jetson AGX Orin",
+  "duration_seconds": 4120,
+  "git_commit": "4d43484",
+  "model": {
+    "name": "VGG16-Folded-8",
+    "slug": "vgg16-folded-8",
+    "architecture": "VGG-Folded",
+    "parameter_count": 14200000,
+    "commit_hash": "4d43484"
+  },
+  "config": {
+    "epochs": 100,
+    "batch_size": 32,
+    "lr": 0.0001,
+    "optimizer": "AdamW",
+    "weight_decay": 0.0001,
+    "loss": "FocalLoss",
+    "folded_stages": [3, 4, 5]
+  },
+  "metrics": {
+    "accuracy": 92.4,
+    "auc_roc": 0.938,
+    "f1_macro": 0.916,
+    "precision": 0.921,
+    "recall": 0.912,
+    "parameters": 14.2,
+    "flops_gflops": 3.84,
+    "latency_ms": 18.2,
+    "fps": 55.0,
+    "peak_memory_mb": 410.0
+  },
+  "artifacts": [
+    {
+      "name": "confusion_matrix.png",
+      "uri": "https://storage.researchos.org/artifacts/vgg16_folded_cm.png"
+    },
+    {
+      "name": "folded_weights.pt",
+      "uri": "https://storage.researchos.org/checkpoints/vgg16_folded_weights.pt"
+    }
+  ]
+}
